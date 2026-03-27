@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>结合生成式 AI 的信息行为研究进展 调研报告</title>
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9fa;
+    font-family: system-ui, -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+    font-size: 16px;
+    line-height: 1.8;
+    color: #222;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 48px 40px 60px;
+    min-height: 100vh;
+  }
+  @media (max-width: 860px) {
+    .container {
+      padding: 32px 20px 40px;
+    }
+  }
+  h1 {
+    text-align: center;
+    font-size: 1.85em;
+    font-weight: 700;
+    margin: 0 0 1.2em;
+    padding-bottom: 0.6em;
+    border-bottom: 3px solid #2563eb;
+    color: #1a1a2e;
+    line-height: 1.4;
+  }
+  h2 {
+    font-size: 1.45em;
+    font-weight: 700;
+    color: #1e3a5f;
+    margin: 2em 0 0.8em;
+    padding-bottom: 0.35em;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  h3 {
+    font-size: 1.15em;
+    font-weight: 600;
+    color: #2d4a7a;
+    margin: 1.6em 0 0.6em;
+    padding-left: 12px;
+    border-left: 4px solid #3b82f6;
+  }
+  p {
+    margin: 0.8em 0;
+    text-align: justify;
+  }
+  a {
+    color: #2563eb;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(37, 99, 235, 0.3);
+    transition: border-color 0.2s, color 0.2s;
+  }
+  a:hover {
+    color: #1d4ed8;
+    border-bottom-color: #1d4ed8;
+  }
+  strong {
+    font-weight: 600;
+    color: #1a1a2e;
+  }
+  em {
+    font-style: italic;
+    color: #444;
+  }
+  ul, ol {
+    padding-left: 1.8em;
+    margin: 0.8em 0;
+  }
+  li {
+    margin: 0.4em 0;
+  }
+  blockquote {
+    margin: 1.2em 0;
+    padding: 12px 20px;
+    border-left: 4px solid #3b82f6;
+    background: #eff6ff;
+    color: #334155;
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p {
+    margin: 0.4em 0;
+  }
+  code {
+    font-family: "SF Mono", "Fira Code", "Cascadia Code", Menlo, Consolas, monospace;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #c7254e;
+  }
+  pre {
+    background: #f1f5f9;
+    padding: 16px 20px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.9em;
+    line-height: 1.5;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.2em 0;
+    font-size: 0.95em;
+    overflow-x: auto;
+    display: block;
+  }
+  @media (min-width: 600px) {
+    table {
+      display: table;
+    }
+  }
+  thead {
+    background: #1e3a5f;
+    color: #fff;
+  }
+  th {
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  tbody tr:nth-child(even) {
+    background: #f8fafc;
+  }
+  tbody tr:hover {
+    background: #eff6ff;
+  }
+  hr {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 2em 0;
+  }
+  .footer {
+    margin-top: 3em;
+    padding-top: 1.5em;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.85em;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>结合生成式 AI 的信息行为研究进展 调研报告</h1>
+<h2>摘要</h2>
+<p>自 2022 年底 ChatGPT 发布以来，生成式 AI（Generative AI, GenAI）正从根本上重构人类与信息的交互方式——信息行为的核心范式正在从&rdquo;检索已有文档&rdquo;转向&rdquo;协同生成信息&rdquo;，这一转变对信息科学领域积累数十年的经典理论模型提出了深刻挑战，同时催生了提示行为、信任校准、提示素养等一系列全新研究主题。本报告基于 25 篇英文和中文核心文献的系统梳理，勾勒出 2023—2026 年间该领域的研究全景、理论演化与未来方向。（文献检索截止日期：2026 年 3 月 22 日；由于该领域发展迅速，报告中的研究发现反映的是各项研究发表时的阶段性证据，而非 2026 年 3 月的最终现状。）</p>
+<h2>1. 引言：为什么信息行为研究需要关注生成式 AI</h2>
+<h3>1.1 信息环境的根本性变化</h3>
+<p>ChatGPT 于 2022 年 11 月发布后，两个月内即突破一亿用户，成为人类历史上增速最快的消费级应用。此后，Google Gemini、Claude、通义千问、文心一言等大语言模型（Large Language Model, LLM）相继涌现，信息生态发生了前所未有的结构性变化：用户不再仅仅&rdquo;查找&rdquo;信息，而是在与 AI 的对话中&rdquo;共同生成&rdquo;信息。OpenAI 发布的用户行为数据显示，ChatGPT 中有高比例的使用并非指向纯知识检索，而是用于个人成长、情感支持（emotional support）及其他非传统信息需求，这一发现大大拓宽了&rdquo;信息行为&rdquo;这一概念的外延。</p>
+<h3>1.2 信息行为理论面临的挑战</h3>
+<p>信息行为（information behavior）是图书情报学（Library and Information Science, LIS）的核心研究领域，拥有 Wilson 通用模型、Kuhlthau 的信息搜索过程模型（Information Search Process, ISP）、Ellis 的信息搜寻行为模型、Bates 的浆果采摘模型（Berrypicking）和 Pirolli &amp; Card 的信息觅食理论（Information Foraging Theory）等经典理论框架。这些模型大多建立在&rdquo;用户发现信息需求→查找信息源→检索文档→评估利用&rdquo;的基本范式之上。当 GenAI 从根本上改变了信息的产生方式和获取路径时，这些理论的基本假设是否仍然成立？这是当下信息行为研究必须回答的核心问题。</p>
+<h2>2. 概念演化：传统信息行为理论的挑战与重构</h2>
+<h3>2.1 传统模型的核心假设</h3>
+<p>经典信息行为模型共享若干核心假设：信息是&rdquo;已经存在&rdquo;的客体，等待被发现和获取；信息搜寻是一个从不确定性到确定性的线性或迭代过程；信息源是独立的、可供检索的文档集合。Wilson（1981, 1999）的通用模型将信息行为界定为用户因信息需求驱动而与信息源交互的全过程。Kuhlthau（1991）的 ISP 模型描述了从&rdquo;启动&rdquo;到&rdquo;呈现&rdquo;的六阶段过程，核心机制是不确定性的逐步消解。Ellis（1989）识别出起始（starting）、链接（chaining）、浏览（browsing）、区分（differentiating）、监测（monitoring）和提取（extracting）六种信息搜寻行为。Bates（1989）的浆果采摘模型强调非线性、动态的信息搜寻路径。Pirolli &amp; Card（1999）的信息觅食理论则从进化心理学视角出发，将信息搜寻类比为动物觅食行为中的探索（exploration）与利用（exploitation）权衡。</p>
+<h3>2.2 GenAI 对核心假设的三重挑战</h3>
+<p>Sebastian（2025）在美国大学与研究图书馆协会（ACRL）2025 年会议论文中系统批判了上述模型在 GenAI 时代的局限性。其核心论点是：这些模型&rdquo;植根于效率、优化和检索逻辑&rdquo;，而 GenAI 不同于传统搜索引擎提供已有文档的排序列表，它&rdquo;构造回应&rdquo;（construct responses），从而模糊了检索与综合之间的边界。综合多项研究，可以识别出 GenAI 对传统模型的三重挑战：</p>
+<p><strong>第一，检索与生成的边界模糊。</strong> 在传统范式中，信息源是外在的、独立于搜寻者的。用户在 Google 中搜索时，获得的是已发表文档的链接列表。但在与 ChatGPT 的对话中，用户获得的是 AI 基于训练数据&rdquo;即时生成&rdquo;的内容。Wilson 模型中的&rdquo;信息源&rdquo;和 Ellis 模型中的&rdquo;提取&rdquo;行为，其含义发生了质变——用户从信息的&rdquo;发现者&rdquo;变成了信息的&rdquo;共创者&rdquo;。</p>
+<p><strong>第二，线性过程假设的瓦解。</strong> Kuhlthau 的 ISP 模型假设不确定性在信息搜索过程中单调递减。然而，在 GenAI 的多轮对话中，AI 的回应可能引入新的议题和新的不确定性。用户的信息需求在对话过程中可能动态演化，甚至被 AI 的回应所重塑。蒙新梦（2024）指出，用户正从传统的信息检索模式向&rdquo;主动参与式的信息生成与共享模式&rdquo;转变。</p>
+<p><strong>第三，信息需求概念的扩展。</strong> Gorichanaz（2025）通过对 205 个用户叙述的定性内容分析发现，传统的&rdquo;认知不确定性消解&rdquo;或&rdquo;意义建构&rdquo;（sensemaking）框架无法涵盖 GenAI 支持的全部信息实践。该研究提出，信息需求在 AI 时代应被重新概念化为&rdquo;在世界中熟练应对&rdquo;（skillfully coping in the world）——一个更宽泛的定义，涵盖了知识获取之外的创造性、社交性和情感性需求。</p>
+<h3>2.3 新的理论视角</h3>
+<p>面对上述挑战，研究者从不同方向探索新的理论视角。</p>
+<p><strong>Gorichanaz 的六类信息实践。</strong> 作为 2025 年 ASIS&amp;T 年会论文，Gorichanaz 识别出 ChatGPT 支持的六类信息实践：写作（Writing）、决策（Deciding）、识别（Identifying）、构思（Ideating）、交谈（Talking）和批判（Critiquing）。这一分类体系突破了传统以&rdquo;获取&rdquo;为中心的信息行为分类，将创造性活动和批判性思维纳入信息行为的范畴。值得注意的是，在信息资源管理科研年会的最新讨论中，学界也在将信息行为拓展至七大类型：获取、传播分享、创作、存储积累、使用、应对、依赖与戒断，与 Gorichanaz 的研究形成了有益呼应。</p>
+<p><strong>批判人文主义进路（Critical and Humanistic Approach）。</strong> Sebastian（2025）主张从效率导向转向以人为本的批判性框架，反对将信息行为简化为可优化的技术过程。该进路关注的是：在 GenAI 时代，信息搜寻过程中的人类能动性（human agency）、批判性反思和伦理判断如何得以保全。</p>
+<p><strong>社会技术系统范式。</strong> 宋小康、赵宇翔和宋士杰等（2023）在《图书情报知识》发文，从社会技术系统范式出发构建 AI 赋能替代信息搜索的理论框架，将 AI 搜索置于技术系统与社会系统交互的视角下加以理解，代表了中文学界的重要理论贡献。</p>
+<h2>3. 五大研究主题集群</h2>
+<h3>3.1 GenAI 作为信息源的搜寻行为</h3>
+<p>这一主题集群关注的核心问题是：用户如何使用 GenAI 搜寻信息？与传统搜索引擎有何差异？</p>
+<p>Kaiser 等（2025）在 ACM CHI 2025 发表了一项大规模研究（n=1526，美国多样化样本），这是该领域规模最大的行为实验之一。研究发现：(1) ChatGPT 用户比 Google 用户更快找到答案且正确率更高；(2) 尽管如此，用户主观上仍偏好 Google；(3) ChatGPT 偏好与用户的人格特质显著相关；(4) 最为关键的是——ChatGPT 用户显著更少依赖一手网络来源（primary web sources），表明 ChatGPT 更多被视为&rdquo;一站式解决方案&rdquo;（one-stop solution）而非连接原始信息源的&rdquo;枢纽&rdquo;。</p>
+<p>Chen &amp; Feng（2024）在 ACM L@S 2024 发表的研究将 Ellis 经典模型应用于学生小组讨论中的信息行为分析。通过滞序分析（lag-sequential analysis）发现，学生的信息搜寻过程通常从 GenAI 工具开始，然后转向探索其他信息源。学生频繁使用 GenAI 作为首要信息源，同时也会寻找额外资源来满足深层信息需求——这表明 GenAI 并未完全取代其他信息源，而是改变了信息搜寻行为的起点和路径。</p>
+<p>Wardle 等（2025）在 JMIR 发表的研究使用出声思维法（Think-Aloud Protocol），比较了 Google AI Overview、ChatGPT 和 Alexa 三种 AI 工具在健康信息搜寻场景中的用户行为差异。Peng 等（2025）在 IJHCI 发表的现场访谈研究则考察了普通用户（lay users）如何使用 ChatGPT 搜寻和评估信息。Kim &amp; Ji（2026）在 IJHCS 发表的实证研究进一步探讨了交互设计策略对 GenAI 探索式搜索中信息探索行为和认知负荷的影响。</p>
+<h3>3.2 提示行为与提示素养</h3>
+<p>GenAI 交互的核心介质是&rdquo;提示词&rdquo;（prompt），这催生了一个全新的研究方向——提示行为（prompting behavior）。</p>
+<p><strong>提示行为的结构化分析。</strong> Jin 等（2025）在 PASIS&amp;T 发表了基于纵向观察的研究，提出 IIOC 框架（Input-Instruction-Output-Context）对用户提示词构造行为进行组件分析。研究发现：43.8% 的提示为单组件提示，用户倾向于以简单直接的方式提问；38.2% 为双组件组合，其中 Input+Instruction 组合最为常见（20.2%）；仅 18.0% 涉及三个及以上组件的复杂提示。这一发现揭示了用户提示行为的简约性倾向。</p>
+<p><strong>数字鸿沟的行为信号。</strong> 一项发表于 Scientific Reports（2026）的全国代表性研究（n=937 美国成人）进一步证实了这一趋势：在多轮对话式信息搜寻中，仅 19.1% 的用户采用了复杂提示策略。作者将这一发现描述为&rdquo;数字鸿沟的行为信号&rdquo;（behavioral signals of digital divide），指出提示能力的不均等分布可能加剧已有的信息不平等。</p>
+<p><strong>提示素养的理论建构。</strong> Hwang 提出了&rdquo;提示素养&rdquo;（Prompt Literacy）概念，指用户能够制定精准指令、理解并解释输出结果、以及根据结果修改提示以达到预期目标的能力。Korzyński 等则将掌握提示工程视为一种新型数字能力，是 AIGC 环境中取得成功的关键数字素养。Lo（2023）提出了 CLEAR 框架（Concise, Logical, Explicit, Adaptive, Reflective），为优化与 GenAI 的交互提供了操作性指导。Frenkel 等（2024）在 ASEE 会议上基于 CLEAR 框架探索了 GenAI 对工程学生信息搜寻行为的影响。</p>
+<h3>3.3 信任、可信度与 AI 幻觉</h3>
+<p>信任（trust）是 GenAI 信息行为研究中最为集中的主题之一，已形成了从概念界定到实证干预的完整研究链条。</p>
+<p><strong>信任作为核心中介变量。</strong> Agergaard 等（2026）在 Media and Communication 发表的丹麦全国代表性调查（n=514）采用概率图模型分析 29 个变量之间的关系，发现信任占据核心位置：它在对 GenAI 运作方式的技术理解与对其输出可靠性的认知信念之间起中介作用。研究还发现 AI 素养和 GenAI 素养分布不均匀，且科学相关信息接触与信任和 GenAI 素养在很大程度上是脱钩的。</p>
+<p><strong>情境敏感的信任校准。</strong> Ryser 等（2025）的定性研究（n=192）提供了更为细腻的洞察：用户面对 LLM 幻觉时，不会产生全面的不信任，而是发展出情境敏感的信任校准（context-sensitive trust calibration）。基于 Lee &amp; See 的校准信任模型，研究确认了期望、先前经验、用户专业知识和领域知识作为影响信任的关键因素，并首次识别出&rdquo;直觉&rdquo;（intuition）作为幻觉检测的额外因素。</p>
+<p><strong>幻觉预警的干预效果。</strong> Hwang &amp; Jeong（2025）在 Cyberpsychology, Behavior, and Social Networking 发表的在线实验（n=208 韩国成人）是该领域少有的因果推断研究。实验证明：AI 幻觉预警（forewarning about AI hallucination）可显著降低错误信息接受度（p=0.001, Cohen&rsquo;s d=0.45），但不影响正确信息的接受（p=0.91）。0.45 的中等效应量表明，简单的信息素养干预就能产生有意义的行为改变，这为教育实践提供了直接证据。</p>
+<p><strong>AI 幻觉的概念框架。</strong> Shao（2025）在哈佛大学肯尼迪学院的 Misinformation Review 上提出了研究 AI 幻觉的概念框架，将 AI 幻觉定义为一种区别于人类错误信息的新型不准确性形式——由概率性 AI 系统产生的、没有准确性理解或欺骗意图的&rdquo;自信谬误&rdquo;。该研究引用了 2025 年 2 月 Google AI Overview 将愚人节讽刺文章当作事实引用的案例，生动说明了 AI 幻觉的社会风险。</p>
+<h3>3.4 信息素养的重新定义</h3>
+<p>GenAI 的普及催生了对信息素养（information literacy）概念的重新思考。传统的信息素养强调信息的查找、评估和使用能力，而 GenAI 时代则需要纳入新的维度。</p>
+<p>在英文学界，AI 素养（AI literacy）和提示素养（Prompt Literacy）成为两个新兴核心概念。前者强调理解 AI 运作机制和局限性的能力，后者聚焦于有效驾驭 GenAI 工具的实操能力。AI 素养研究（Computers and Education: AI, 2024）发现，非专家的 AI 素养水平直接影响其提示工程技能，而高质量的提示工程技能反过来预测 LLM 输出质量，形成了&rdquo;素养→技能→效果&rdquo;的因果链。</p>
+<p>在中文学界，大学图书馆学报（2024）发文探讨 AIGC 背景下信息素养教育的拓展方向，华东师范大学的研究者（2024）系统论述了提示素养概念，并特别关注图书馆在培育提示素养中的角色。这些研究反映了中文图书情报学界对 GenAI 时代信息素养教育的高度关注。</p>
+<h3>3.5 信息行为的负面效应</h3>
+<p>研究不仅关注 GenAI 带来的机遇，也日益关注其负面效应。</p>
+<p><strong>信息焦虑。</strong> 刘思琦等（2024）在《图书情报工作》发文，系统研究了 AIGC 情境下科研工作者信息焦虑的影响机制。这代表了中文学界对 GenAI 时代信息行为负面效应的关注——当 AI 可以快速生成大量内容时，科研工作者可能面临新型的信息过载和能力焦虑。</p>
+<p><strong>过度依赖与验证能力退化。</strong> Kaiser 等（2025）的发现——ChatGPT 用户显著更少依赖一手网络来源——从侧面反映了过度依赖的风险：当用户习惯了 GenAI 的&rdquo;一站式&rdquo;服务后，深入核查原始信息源的意愿和能力可能退化。</p>
+<p><strong>生成式 AI 悖论。</strong> Ferrara（2026）在 Future Internet 发表了更具宏观视角的理论论文，提出&rdquo;生成式 AI 悖论&rdquo;（The Generative AI Paradox）：GenAI 以可忽略的边际成本生产感知上令人信服的多模态内容（文本、图像、音频和视频），创造出&rdquo;合成现实&rdquo;（synthetic realities）——即连贯的、交互的、可个性化的信息环境。这一能力从根本上侵蚀了公众的信息验证能力和社会信任基础，其影响超越了&rdquo;深度伪造&rdquo;或&rdquo;错误信息&rdquo;的传统框架，标志着更广泛的社会技术转变。</p>
+<h2>4. 理论框架与方法论取向</h2>
+<h3>4.1 经典理论的适配与扩展</h3>
+<p>部分研究者选择在保留经典模型核心架构的基础上，增加 GenAI 相关变量进行适配。Chen &amp; Feng（2024）验证了 Ellis 模型在 GenAI 环境中的部分适用性，发现 starting、chaining、browsing 等行为模式仍然存在，但行为序列发生了改变（以 GenAI 为起点）。Flores 等（2024）在 CogSci 2024 发表的研究将 Pirolli &amp; Card 的信息觅食理论应用于人-ChatGPT 交互情境，发现计算思维技能可以区分用户的探索与利用行为，证实了信息觅食框架的跨情境适用性。Mun（2024）在 Online Information Review 发表的研究结合自我效能感理论，考察了 ChatGPT 自我效能感对信息搜寻行为的影响及其中介机制。</p>
+<h3>4.2 新理论框架的提出</h3>
+<p>更多研究者认为，GenAI 的独特性需要全新的理论解释。除前述 Gorichanaz 的六类实践分类、Jin 的 IIOC 框架和 Shao 的幻觉概念框架外，Garetto 等（2025）在 arXiv 预印本中提出了 RGB 模型（Retrieval-Generation Boundary model），专门用于分析生成式 AI 时代的信息检索行为，试图从理论上厘清检索与生成之间的边界及其对信息行为的含义。Sebastian（2025）的批判人文主义进路则代表了方法论层面的创新，主张超越实证主义的效率测量，转向关注信息搜寻中的人类主体性和伦理维度。</p>
+<h3>4.3 借用邻域理论</h3>
+<p>第三种取向是从心理学、传播学、人机交互等邻域借鉴成熟理论。技术接受模型（TAM/UTAUT）被用于研究 GenAI 的采纳意愿；&rdquo;刺激-有机体-反应&rdquo;（S-O-R）理论被用于分析用户对 GenAI 的认知和行为反应过程；Lee &amp; See 的校准信任模型则被 Ryser 等（2025）成功应用于解释用户对 LLM 幻觉的信任调整机制。这些跨学科理论的引入丰富了该领域的解释力，但也带来了理论碎片化的风险。</p>
+<h3>4.4 方法论分布与趋势</h3>
+<p>在方法论层面，该领域呈现出多元化且日趋成熟的特征。主要方法包括：</p>
+<ul>
+<li><strong>大规模行为实验</strong>：Kaiser 等（n=1526）和 Hwang &amp; Jeong（n=208）的研究代表了该领域的实验化趋势，具备因果推断能力。</li>
+<li><strong>全国代表性调查</strong>：Agergaard 等（n=514，丹麦）和 Scientific Reports（n=937，美国）的研究具有高外部效度，其结论可推广至一般人群。</li>
+<li><strong>定性研究</strong>：包括访谈（Peng 2025; Wardle 2025 的出声思维法）和内容分析（Gorichanaz 2025），提供了丰富的行为细节和用户视角。</li>
+<li><strong>行为日志与痕迹分析</strong>：Jin 等（2025）通过纵向观察用户的提示词使用行为，获取了自然情境下的行为数据。</li>
+<li><strong>问卷调查结合结构方程模型</strong>（SEM/PLS）：如 Mun（2024），是最常见的方法组合。</li>
+</ul>
+<p>值得注意的是，混合方法（mixed methods）越来越受到青睐，大规模行为实验和代表性调查的出现标志着该领域从早期的探索性、描述性研究走向系统验证阶段。</p>
+<h2>5. 中文学界的研究进展</h2>
+<p>中文图书情报学界在该领域的研究起步较早且具有鲜明特色。</p>
+<p><strong>早期系统性探索。</strong> 卢新元、张进澳和雷晓鹏（2023）在《情报理论与实践》发文，以对话式搜索引擎为例较早系统分析了 AIGC 环境下的用户信息行为，是中文核心期刊中的先驱性工作。宋小康、赵宇翔和宋士杰等（2023）在《图书情报知识》发文，从社会技术系统范式出发构建了 AI 赋能替代信息搜索的理论框架，在理论建构层面做出了原创贡献。</p>
+<p><strong>负面效应与教育应对。</strong> 刘思琦等（2024）在《图书情报工作》的研究聚焦 AIGC 情境下科研工作者的信息焦虑问题，反映了中文学界对 GenAI 负面效应的敏锐关注。蒙新梦（2024）的研究则从用户行为重塑的角度系统分析了对话式搜索引擎的影响。在教育应对方面，《大学图书馆学报》（2024）和华东师范大学（2024）的研究者分别从信息素养教育和提示素养培育的角度提出了建设性方案。</p>
+<p><strong>中国特色的研究视角。</strong> 相较于英文学界侧重大规模行为实验和因果推断，中文学界在以下方面具有特色：(1) 对&rdquo;信息焦虑&rdquo;等情感维度的关注较为突出；(2) 强调图书馆在 AI 素养教育中的制度性角色；(3) 社会技术系统范式的理论取向体现了整体论思维。然而，中文研究在样本规模、因果推断设计和国际可比性方面仍有提升空间。</p>
+<h2>6. 研究发现总结与未来方向</h2>
+<h3>6.1 六大核心发现</h3>
+<p>综合全部文献，可提炼出以下六大核心发现：</p>
+<ol>
+<li>
+<p><strong>GenAI 改变了信息行为的起点和路径</strong>：用户倾向于以 GenAI 为&rdquo;第一站&rdquo;，然后选择性地深入一手来源（Kaiser 2025; Chen &amp; Feng 2024）。GenAI 更多被视为一站式解决方案而非信息枢纽。</p>
+</li>
+<li>
+<p><strong>提示能力构成新型数字鸿沟</strong>：仅约 1/5 的用户能够构造复杂有效的提示（Jin 2025; Scientific Reports 2026），提示技能的不均等分布可能加剧信息不平等。</p>
+</li>
+<li>
+<p><strong>信任机制是复杂的、情境化的</strong>：用户对 GenAI 的信任不是简单的&rdquo;信&rdquo;或&rdquo;不信&rdquo;，而是根据领域、经验、任务和直觉等因素进行动态校准（Agergaard 2026; Ryser 2025）。</p>
+</li>
+<li>
+<p><strong>信息素养干预在 GenAI 环境中有效</strong>：AI 幻觉预警可以显著降低错误信息接受度而不影响正确信息的利用，效应量达到中等水平（Hwang &amp; Jeong 2025, d=0.45）。</p>
+</li>
+<li>
+<p><strong>GenAI 使用远超知识检索范畴</strong>：写作、决策、构思、交谈、批判和情感支持等实践表明，信息行为的边界正在大幅扩展（Gorichanaz 2025）。</p>
+</li>
+<li>
+<p><strong>信息生态面临系统性风险</strong>：GenAI 创造&rdquo;合成现实&rdquo;的能力对整个信息验证体系构成根本性挑战（Ferrara 2026），这不仅是个体层面的信息素养问题，更是社会层面的信任基础设施问题。</p>
+</li>
+</ol>
+<h3>6.2 研究空白与未来方向</h3>
+<p>基于上述发现和当前研究空白，可识别以下优先方向：</p>
+<ul>
+<li><strong>纵向追踪研究</strong>：当前研究多为横截面设计，亟需追踪用户信息行为随 GenAI 使用时间增长的演变轨迹。用户的信任校准、提示技能和信息评估能力是否会随经验积累而改善？还是出现路径依赖和技能退化？</li>
+<li><strong>跨文化比较</strong>：现有研究集中于美国、韩国、中国和丹麦，缺乏系统的跨文化比较。不同文化背景下的信息行为规范、AI 信任基线和数字素养水平如何影响 GenAI 信息行为？</li>
+<li><strong>弱势群体的 GenAI 信息行为</strong>：老年人、低教育程度用户、非英语母语者等群体在 GenAI 信息行为中的表现和需求尚未得到充分关注，而数字鸿沟研究（Scientific Reports 2026）已暗示了不平等的存在。</li>
+<li><strong>多模态信息行为</strong>：当前研究几乎全部聚焦于文本交互，对图像生成（如 DALL-E、Midjourney）、视频生成（如 Sora）和语音交互场景中的信息行为研究严重不足。</li>
+<li><strong>理论整合</strong>：如何将分散于不同主题集群和方法论传统中的研究发现整合为统一的理论框架，是该领域面临的核心理论挑战。</li>
+</ul>
+<h3>6.3 对信息行为理论发展的启示</h3>
+<p>该领域正处于从探索性研究向系统性理论构建的过渡期。核心发现已经初步清晰，但理论整合和长期影响的评估仍是关键挑战。GenAI 并非简单地增加了一个新的信息源，而是从根本上重构了信息行为的范式——从&rdquo;寻找已有信息&rdquo;到&rdquo;协同生成信息&rdquo;。这意味着信息行为的经典理论模型需要的不是简单的修补或变量添加，而是范式层面的反思与可能的重建。同时，该领域呈现出的理论多元化特征（经典适配、新框架提出、邻域借鉴三条路径并存）本身是健康的，但最终需要走向某种程度的理论整合，以避免碎片化。</p>
+<h2>参考资料</h2>
+<h3>一手资料（L1/L2）</h3>
+<ol>
+<li>Sebastian (2025). Reframing Information-Seeking in the Age of Generative AI: A Critical and Humanistic Approach. <em>ACRL 2025</em>. <a target="_blank" href="https://www.ala.org/sites/default/files/2025-03/ReframingInformation-SeekingintheAgeofGenerativeAI.pdf">PDF</a></li>
+<li>Gorichanaz, T. (2025). Information Needs and Practices Supported by ChatGPT. <em>ASIS&amp;T 2025</em>. <a target="_blank" href="https://arxiv.org/pdf/2507.05537">arXiv:2507.05537</a></li>
+<li>Jin, Z., Meng, G., et al. (2025). Understanding User Prompting Behavior in Generative AI: A Component Analysis. <em>Proceedings of the Association for Information Science and Technology</em>. <a target="_blank" href="https://doi.org/10.1002/pra2.1318">DOI:10.1002/pra2.1318</a></li>
+<li>Kaiser, C., Kaiser, J., Schallner, R., &amp; Schneider, S. (2025). A New Era of Online Search? A Large-Scale Study of User Behavior and Personal Preferences during Practical Search Tasks with Generative AI versus Traditional Search Engines. <em>ACM CHI 2025</em>. <a target="_blank" href="https://www.semanticscholar.org/paper/19afcb3a26b9faa81deb5010267af3c0db6dd0d0">Semantic Scholar</a></li>
+<li>Chen, X. &amp; Feng, S. (2024). Analyzing Students&rsquo; Information Behavior in Generative AI-Supported Small Group Discussions. <em>ACM L@S 2024</em>. <a target="_blank" href="https://doi.org/10.1145/3657604.3664657">DOI:10.1145/3657604.3664657</a></li>
+<li>Wardle, C. et al. (2025). Evolving Health Information-Seeking Behavior in the Context of Google AI Overviews, ChatGPT, and Alexa: Interview Study Using the Think-Aloud Protocol. <em>JMIR</em>, 2025(1), e79961. <a target="_blank" href="https://www.jmir.org/2025/1/e79961">DOI:10.2196/79961</a></li>
+<li>Agergaard, Nielsen, Labouriau, &amp; Fage-Butler (2026). Exploring Trust and Literacy in Engagement with Generative AI and Science Information Behavior. <em>Media and Communication</em>. <a target="_blank" href="https://www.semanticscholar.org/paper/ba589be5b0eae83e73cd99fe6631a3a1d7f23494">Semantic Scholar</a></li>
+<li>Scientific Reports (2026). Users&rsquo; prompting strategies and ChatGPT&rsquo;s contextual adaptation shape conversational information-seeking experiences. <em>Nature Scientific Reports</em>. <a target="_blank" href="https://www.nature.com/articles/s41598-026-42465-4">DOI:10.1038/s41598-026-42465-4</a></li>
+<li>Flores, P., Rong, G., &amp; Cowley, B. (2024). Information foraging in human-ChatGPT interactions: factors of computational thinking dissociate exploration and exploitation. <em>CogSci 2024</em>. <a target="_blank" href="https://tuhat.helsinki.fi/ws/portalfiles/portal/323543055/Cogsci2024_GPT_Inf_Foraging_Camera_Ready.pdf">PDF</a></li>
+<li>Peng, W. et al. (2025). How Do Lay Users Seek Information with ChatGPT: An In-Situ Interview Study. <em>IJHCI</em>. <a target="_blank" href="https://doi.org/10.1080/10447318.2025.2586086">DOI:10.1080/10447318.2025.2586086</a></li>
+<li>Hwang &amp; Jeong (2025). Generative AI and Misinformation Acceptance: An Experimental Test of the Effect of Forewarning About AI Hallucination. <em>Cyberpsychology, Behavior, and Social Networking</em>. <a target="_blank" href="https://doi.org/10.1089/cyber.2024.0407">DOI:10.1089/cyber.2024.0407</a></li>
+<li>Ryser, Allwein, &amp; Schlippe (2025). Calibrated Trust in Dealing with LLM Hallucinations: A Qualitative Study. <a target="_blank" href="https://arxiv.org/pdf/2512.09088">arXiv:2512.09088</a></li>
+<li>Shao, A. (2025). New sources of inaccuracy? A conceptual framework for studying AI hallucinations. <em>Harvard Kennedy School Misinformation Review</em>. <a target="_blank" href="https://misinforeview.hks.harvard.edu/article/new-sources-of-inaccuracy-a-conceptual-framework-for-studying-ai-hallucinations/">链接</a></li>
+<li>Ferrara, E. (2026). The Generative AI Paradox: GenAI and the Erosion of Trust, the Corrosion of Information Verification, and the Demise of Truth. <em>Future Internet</em>, 18(2), 73. <a target="_blank" href="https://www.mdpi.com/1999-5903/18/2/73">DOI:10.3390/fi18020073</a></li>
+<li>Mun, I. B. (2024). A study of the impact of ChatGPT self-efficacy on the information seeking behaviors in ChatGPT. <em>Online Information Review</em>. <a target="_blank" href="https://doi.org/10.1108/OIR-01-2024-0051">DOI:10.1108/OIR-01-2024-0051</a></li>
+<li>Kim, N. &amp; Ji, Y. G. (2026). Exploratory Search with Generative AI: An Empirical Study on the Impact of Interaction Design Strategies on Information Exploration and Cognitive Load. <em>IJHCS</em>, In Press. <a target="_blank" href="https://doi.org/10.1016/j.ijhcs.2026.103771">DOI:10.1016/j.ijhcs.2026.103771</a></li>
+<li>AI literacy and its implications for prompt engineering strategies (2024). <em>Computers and Education: AI</em>. <a target="_blank" href="https://doi.org/10.1016/j.caeai.2024.100350">DOI:10.1016/j.caeai.2024.100350</a></li>
+<li>Garetto et al. (2025). Information Retrieval in the Age of Generative AI: The RGB Model. <a target="_blank" href="https://arxiv.org/pdf/2504.20610">arXiv:2504.20610</a></li>
+<li>Frenkel, Emara, He, Anderberg, &amp; Putnam (2024). Work in Progress: Exploring the impact of Generative AI on Information Seeking Behavior of Engineering Students. <em>ASEE 2024</em>. <a target="_blank" href="https://peer.asee.org/work-in-progress-exploring-the-impact-of-generative-ai-on-information-seeking-behavior-of-engineering-students.pdf">PDF</a></li>
+<li>卢新元, 张进澳, 雷晓鹏 (2023). 人工智能生成内容环境下用户信息行为研究——以对话式搜索引擎为例. <em>情报理论与实践</em>, 46(12): 84-92. <a target="_blank" href="https://manu44.magtech.com.cn/Jwk_infotech_wk3/CN/10.11925/infotech.2096-3467.2023.1145">链接</a></li>
+<li>宋小康, 赵宇翔, 宋士杰 等 (2023). 社会技术系统范式下AI赋能的替代信息搜索：特征、理论框架与研究展望. <em>图书情报知识</em>, 40(4): 111-121.</li>
+<li>刘思琦, 邝苗苗, 肖玥, 孙晓宁 (2024). AIGC情境下科研工作者信息焦虑影响机制研究. <em>图书情报工作</em>. <a target="_blank" href="https://www.lis.ac.cn/CN/10.13266/j.issn.0252-3116.2024.11.011">链接</a></li>
+<li>AIGC背景下高校信息素养教育的发展 (2024). <em>大学图书馆学报</em>. <a target="_blank" href="http://www.scal.edu.cn/sites/default/files/attachment/dxtsgxb/AIGC%20%E8%83%8C%E6%99%AF%E4%B8%8B%E9%AB%98%E6%A0%A1%E4%BF%A1%E6%81%AF%E7%B4%A0%E5%85%BB%E6%95%99%E8%82%B2%E7%9A%84%E5%8F%91%E5%B1%95.pdf">PDF</a></li>
+<li>生成式AI时代下的提示素养培育研究 (2024). 华东师范大学. <a target="_blank" href="https://meta.ecnu.edu.cn/_upload/article/files/b9/bb/c3073a4d4ed48cdd0bb988a6dcef/4395b06c-d413-4919-ab46-7a2aa8d4b2c9.pdf">PDF</a></li>
+</ol>
+<h3>辅助资料（L3/L4）</h3>
+<ol>
+<li>蒙新梦 (2024). 生成式人工智能对话式搜索对个人用户信息搜寻行为的影响研究. <em>社会科学前沿</em>. <a target="_blank" href="https://pdf.hanspub.org/ass2024137_812397354.pdf">PDF</a></li>
+</ol>
+<h2>延展与个人思考</h2>
+<p>以下内容来自研究者个人知识库（GetNote）中的相关笔记，提供了学术会议现场和同行讨论中的第一手观察。</p>
+<p><strong>ChatGPT 的使用超越了&rdquo;知识工具&rdquo;定位。</strong> 在一次跨学科研讨中（AI in Society 课题组，情报学+新媒体+数字社会学交叉，<a target="_blank" href="https://www.biji.com/note/1892380104421684144">来源笔记</a>，2025-11-06），有学者提到 OpenAI 的用户行为报告显示，ChatGPT 中有非常高比例的使用指向个人成长和情感支持，而非人们第一直觉认为的纯知识检索。这一发现与本报告中 Gorichanaz（2025）的六类信息实践分类高度一致——Talking（交谈）和 Critiquing（批判）等实践类别本身就指向了超越知识获取的社交性和反思性需求。从信息行为研究的角度，这意味着经典的&rdquo;信息需求→信息搜寻→信息使用&rdquo;模型可能需要纳入&rdquo;情感性信息需求&rdquo;和&rdquo;非理性信息使用&rdquo;等维度。</p>
+<p><strong>搜索引擎日志研究方法的持续价值。</strong> 同一讨论中也提到，尽管 GenAI 改变了信息交互的形式，传统的搜索引擎日志研究方法仍然有效——只是分析对象从查询日志（query logs）扩展到了对话日志（conversation logs）。这对方法论传承具有重要启示：信息行为研究积累的大量日志分析技术和框架并不会过时，而是需要适配新的数据形态。</p>
+<p><strong>信息行为的分类正在扩展。</strong> 信息资源管理科研年会的最新讨论（<a target="_blank" href="https://www.biji.com/note/1904990060756479840">来源笔记</a>，2026-03-22）将信息行为划分为七大类型：获取、传播分享、创作、存储积累、使用、应对、依赖与戒断。其中&rdquo;依赖与戒断&rdquo;的纳入特别值得关注——它与本报告第 3.5 节讨论的负面效应研究形成呼应，表明学界已经开始将信息行为研究的视野从&rdquo;如何有效获取信息&rdquo;拓展到&rdquo;如何健康地与信息环境共处&rdquo;。</p>
+<p><strong>LLM 模拟社会研究的局限性。</strong> 在讨论中有学者指出，使用 LLM 模拟社会研究（如用 AI 模拟受访者）存在根本性局限：LLM 的输出本质上是训练数据的概率性重组，不能等同于人类的社会认知和行为。这提醒信息行为研究者，在方法论创新（如使用 LLM 生成模拟数据）时需保持审慎——模拟得到的&rdquo;信息行为&rdquo;可能与真实的人类信息行为存在系统性偏差。</p>
+<div class="footer">
+  <p>本报告由深度调研系统生成</p>
+</div>
+</div>
+</body>
+</html>
