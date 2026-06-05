@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>消防法规知识图谱 MVP</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧯</text></svg>">
+<style>
+:root{
+  --bg:#f6f7f9; --card:#fff; --ink:#1c2430; --muted:#6b7686;
+  --brand:#c0392b; --brand-soft:#fdecea;
+  --doc:#2563ab; --doc-soft:#e8f0fa;
+  --term:#c2570a; --term-soft:#fdf0e3;
+  --line:#e3e7ee; --ok:#1e7e4e; --dead:#8a929e;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+a{color:var(--doc);text-decoration:none}
+a:hover{text-decoration:underline}
+header{background:linear-gradient(135deg,#7f1d1d,#b03a2e);color:#fff;padding:26px 20px 20px}
+.wrap{max-width:1060px;margin:0 auto;padding:0 8px}
+header h1{margin:0;font-size:1.5em;letter-spacing:1px}
+header p{margin:6px 0 0;opacity:.85;font-size:.9em}
+nav{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+nav .wrap{display:flex;gap:4px;align-items:center;flex-wrap:wrap;padding:8px}
+nav a{padding:6px 14px;border-radius:8px;color:var(--ink);font-size:.95em}
+nav a.active{background:var(--brand-soft);color:var(--brand);font-weight:600}
+nav a:hover{background:#f0f2f5;text-decoration:none}
+#searchbox{flex:1;min-width:220px;position:relative;margin-left:auto}
+#searchbox input{width:100%;padding:8px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:.95em;outline:none}
+#searchbox input:focus{border-color:var(--brand)}
+#sugg{position:absolute;top:105%;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);overflow:hidden;display:none;max-height:320px;overflow-y:auto}
+#sugg .s{padding:8px 14px;cursor:pointer;font-size:.92em;border-bottom:1px solid #f3f4f6}
+#sugg .s:hover,#sugg .s.sel{background:var(--brand-soft)}
+#sugg .alias-hint{color:var(--muted);font-size:.88em}
+main{padding:22px 8px 60px}
+.banner{background:#fff8e6;border:1px solid #f0dba8;border-radius:10px;padding:10px 16px;font-size:.88em;color:#7a5d12;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:16px}
+.card h2{margin:0 0 10px;font-size:1.2em}
+.card h3{margin:18px 0 8px;font-size:1.02em}
+.chip{display:inline-block;padding:4px 12px;border-radius:999px;margin:3px 4px 3px 0;font-size:.9em;cursor:pointer;border:1px solid transparent}
+.chip.term{background:var(--term-soft);color:var(--term)}
+.chip.term:hover{border-color:var(--term);text-decoration:none}
+.chip.alias{background:#f0f2f5;color:var(--muted)}
+.badge{display:inline-block;padding:1px 9px;border-radius:6px;font-size:.78em;margin-left:6px;vertical-align:1px}
+.badge.law{background:#7f1d1d;color:#fff}
+.badge.mand{background:var(--brand);color:#fff}
+.badge.dead{background:var(--dead);color:#fff}
+.badge.ok{background:#e7f4ec;color:var(--ok)}
+.badge.fid{background:#eef1f5;color:var(--muted)}
+.doc-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:8px 0 2px;border-bottom:2px solid var(--doc-soft);margin-top:16px}
+.doc-head .code{font-weight:700;color:var(--doc)}
+.clause{border:1px solid var(--line);border-left:4px solid var(--doc);border-radius:8px;margin:10px 0;background:#fcfdfe}
+.clause-h{padding:8px 14px;cursor:pointer;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.clause-h:hover{background:var(--doc-soft)}
+.clause-h .no{font-weight:700;color:var(--doc)}
+.clause-h .arrow{margin-left:auto;color:var(--muted);transition:transform .15s}
+.clause.open .arrow{transform:rotate(90deg)}
+.clause-b{display:none;padding:4px 16px 12px;border-top:1px dashed var(--line);white-space:pre-wrap;font-size:.94em}
+.clause.open .clause-b{display:block}
+.clause-b .src{display:block;margin-top:8px;font-size:.85em;color:var(--muted)}
+.def-box{background:var(--term-soft);border-radius:10px;padding:12px 16px;margin:10px 0}
+.note{color:var(--muted);font-size:.88em}
+.rel-line{padding:6px 0;border-bottom:1px dashed var(--line);font-size:.95em}
+.rel-line:last-child{border-bottom:none}
+.arrow-lbl{display:inline-block;background:#eef1f5;border-radius:6px;padding:0 8px;font-size:.82em;color:var(--muted);margin:0 6px}
+.stats{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.stat{background:rgba(255,255,255,.16);border-radius:10px;padding:6px 14px;font-size:.85em}
+.stat b{font-size:1.25em;margin-right:4px}
+#graph-wrap{position:relative}
+#graph{width:100%;height:620px;border-radius:10px;background:#fbfcfe;border:1px solid var(--line);cursor:grab;touch-action:none}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:.85em;color:var(--muted);margin-top:8px}
+.legend span{display:flex;align-items:center;gap:6px}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+.sq{width:14px;height:10px;border-radius:3px;display:inline-block}
+.lin{width:22px;height:0;border-top:2px solid;display:inline-block}
+.lin.dash{border-top-style:dashed}
+.hl{color:var(--term);font-weight:600;cursor:pointer;border-bottom:1px dashed var(--term)}
+.hl:hover{background:var(--term-soft)}
+mark{background:#ffe9a8;border-radius:3px;padding:0 2px}
+.empty{color:var(--muted);text-align:center;padding:30px}
+.merge-tip{background:var(--term-soft);border-left:4px solid var(--term);border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:.95em}
+footer{border-top:1px solid var(--line);padding:18px;text-align:center;color:var(--muted);font-size:.85em}
+@media (max-width:640px){.card{padding:14px}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>🧯 消防法规知识图谱 <small style="font-weight:400;font-size:.6em">MVP</small></h1>
+  <p>一个术语，贯通法律 · 通用规范 · 设计规范 · 技术标准 —— 术语归并 / 条款链接 / 引用网络</p>
+  <div class="stats" id="hdr-stats"></div>
+</div></header>
+<nav><div class="wrap">
+  <a href="#/" data-nav="home">总览</a>
+  <a href="#/terms" data-nav="terms">术语</a>
+  <a href="#/docs" data-nav="docs">文件</a>
+  <a href="#/graph" data-nav="graph">图谱</a>
+  <div id="searchbox">
+    <input id="q" type="search" placeholder="搜术语或条文，试试「消控室」「值班」…" autocomplete="off">
+    <div id="sugg"></div>
+  </div>
+</div></nav>
+<main><div class="wrap">
+  <div class="banner" id="disclaimer"></div>
+  <div id="app"></div>
+</div></main>
+<footer>消防法规知识图谱 MVP · 静态零依赖演示 · 数据管线：data/*.json → build.py → data.js</footer>
+
+<script src="data.js"></script>
+<script>
+"use strict";
+const KB = window.FIREKB;
+const docById = Object.fromEntries(KB.documents.map(d=>[d.id,d]));
+const termByName = Object.fromEntries(KB.terms.map(t=>[t.name,t]));
+const clauseById = Object.fromEntries(KB.clauses.map(c=>[c.id,c]));
+const esc = s => String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const $ = sel => document.querySelector(sel);
+
+document.getElementById('disclaimer').textContent = '⚠ ' + KB.meta.disclaimer;
+document.getElementById('hdr-stats').innerHTML =
+  [['法规文件',KB.meta.stats.documents],['术语',KB.meta.stats.terms],['别名',KB.meta.stats.aliases],
+   ['条款',KB.meta.stats.clauses],['引用边',KB.meta.stats.cite_edges],['演化关系',KB.meta.stats.doc_relations]]
+  .map(([k,v])=>`<div class="stat"><b>${v}</b>${k}</div>`).join('');
+
+/* ---------- 术语高亮：条文内出现的术语/别名变为可点击链接 ---------- */
+const tokens = Object.keys(KB.nameMap).sort((a,b)=>b.length-a.length);
+const tokenRe = new RegExp(tokens.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'g');
+function richText(raw, skipTerm){
+  let out='', last=0;
+  raw.replace(tokenRe, (m, idx)=>{
+    out += esc(raw.slice(last, idx));
+    const canon = KB.nameMap[m];
+    out += (canon===skipTerm) ? esc(m)
+      : `<span class="hl" onclick="go('term/${encodeURIComponent(canon)}')" title="查看术语：${esc(canon)}">${esc(m)}</span>`;
+    last = idx + m.length;
+    return m;
+  });
+  return out + esc(raw.slice(last));
+}
+
+/* ---------- 徽章 ---------- */
+function statusBadge(d){
+  if(d.status.includes('废止') && d.type.includes('已废止')) return `<span class="badge dead">废止</span>`;
+  if(d.type==='法律') return `<span class="badge law">法律</span>`;
+  if(d.status.includes('强制') || d.type.includes('强制')) return `<span class="badge mand">强制</span>`;
+  return `<span class="badge ok">现行</span>`;
+}
+function strengthBadge(c){
+  if(!c.strength) return '';
+  const mand = c.strength.includes('强制') && !c.strength.includes('原强制');
+  return `<span class="badge ${mand?'mand':'fid'}">${esc(c.strength)}</span>`;
+}
+
+/* ---------- 条款卡片 ---------- */
+function clauseCard(c, opts={}){
+  const hi = opts.highlight;
+  // 高亮模式下用纯文本层处理，避免 <mark> 注入 richText 生成的 HTML 属性
+  let body = hi
+    ? esc(c.text).split(esc(hi)).join(`<mark>${esc(hi)}</mark>`)
+    : richText(c.text, opts.skipTerm);
+  return `<div class="clause" id="c-${esc(c.id)}">
+    <div class="clause-h" onclick="this.parentNode.classList.toggle('open')">
+      <span class="no">${esc(c.no)}</span><span>${esc(c.title)}</span>
+      ${strengthBadge(c)}<span class="badge fid">${esc(c.fidelity)}</span>
+      <span class="arrow">▶</span>
+    </div>
+    <div class="clause-b">${body}
+      ${c.note?`<div class="note">※ ${esc(c.note)}</div>`:''}
+      ${c.cites.length?`<div class="note">本条引用：${c.cites.map(id=>`<a href="#/doc/${id}">${esc(docById[id].code)}</a>`).join('、')}</div>`:''}
+      <a class="src" href="${esc(c.source_url)}" target="_blank" rel="noopener">来源 ↗ ${esc(c.source_url)}</a>
+    </div>
+  </div>`;
+}
+function clausesGroupedByDoc(ids, opts={}){
+  const byDoc = new Map();
+  ids.forEach(id=>{ const c=clauseById[id]; (byDoc.get(c.doc)||byDoc.set(c.doc,[]).get(c.doc)).push(c); });
+  let html='';
+  for(const [docId, list] of byDoc){
+    const d = docById[docId];
+    html += `<div class="doc-head"><a class="code" href="#/doc/${docId}">${esc(d.code)}</a>
+      <span>${esc(d.name)}</span>${statusBadge(d)}
+      <span class="note">${esc(d.version?('· '+d.version):'')}</span></div>`;
+    html += list.map(c=>clauseCard(c,opts)).join('');
+  }
+  return html;
+}
+
+/* ---------- 视图 ---------- */
+function viewHome(){
+  return `<div class="card"><h2>这是什么？</h2>
+    <p>消防领域的法律、规范、标准数量多且交叉引用密集：同一个概念（如「消防控制室」）在 GB 55037、GB 50016、GB 50116、GB 25506、GB 50974 中分别有不同侧面的要求。本 MVP 演示如何把<b>术语 — 条款 — 文件 — 引用关系</b>链接起来：</p>
+    <p>① 搜「<span class="hl" onclick="$('#q').value='消控室';doSearch('消控室')">消控室</span>」会自动归并到正名「消防控制室」，列出它在所有收录文件中的条款；<br>
+    ② 条文里出现的其他术语自动变成链接，点击即可跳转；<br>
+    ③ <a href="#/graph">图谱</a>页可视化「术语↔文件」出现关系、「文件→文件」引用关系与标准替代演化。</p></div>
+  <div class="card"><h2>术语（${KB.terms.length}）</h2>
+    ${KB.terms.map(t=>`<a class="chip term" href="#/term/${encodeURIComponent(t.name)}">${esc(t.name)}${t.aliases.length?`<span style="opacity:.55"> +${t.aliases.length}别名</span>`:''}</a>`).join('')}</div>
+  <div class="card"><h2>收录文件（${KB.documents.length}）</h2>
+    ${KB.documents.map(d=>`<div class="rel-line"><a href="#/doc/${d.id}"><b>${esc(d.code)}</b></a> ${esc(d.name)} ${statusBadge(d)} ${d.collected?'':'<span class="note">（仅作为关系节点，未收录条文）</span>'}</div>`).join('')}</div>`;
+}
+
+function viewTerms(){
+  return `<div class="card"><h2>术语库（含别名归并）</h2>
+    ${KB.terms.map(t=>{
+      const n = (KB.termClauses[t.name]||[]).length;
+      return `<div class="rel-line"><a href="#/term/${encodeURIComponent(t.name)}"><b>${esc(t.name)}</b></a>
+        ${t.aliases.map(a=>`<span class="chip alias">${esc(a)}</span>`).join('')}
+        <span class="note">出现于 ${n} 条条款</span></div>`;
+    }).join('')}</div>`;
+}
+
+function viewTerm(name, mergedFrom){
+  const t = termByName[name];
+  if(!t) return `<div class="card empty">未找到术语「${esc(name)}」</div>`;
+  const ids = KB.termClauses[name]||[];
+  const docsCount = new Set(ids.map(id=>clauseById[id].doc)).size;
+  const rel = (KB.related[name]||[]).slice(0,8);
+  let html = '';
+  if(mergedFrom) html += `<div class="merge-tip">「${esc(mergedFrom)}」是「<b>${esc(name)}</b>」的别名，已自动归并。</div>`;
+  html += `<div class="card"><h2>${esc(t.name)}
+      ${t.aliases.map(a=>`<span class="chip alias">${esc(a)}</span>`).join('')}</h2>`;
+  if(t.definition){
+    const ds = t.def_source;
+    html += `<div class="def-box"><b>定义</b>：${esc(t.definition)}
+      ${ds?`<div class="note">—— <a href="#/doc/${ds.doc}">${esc(docById[ds.doc].code)}</a> ${esc(ds.clause)}</div>`:''}</div>`;
+  }
+  if(t.def_note) html += `<p class="note">📌 ${esc(t.def_note)}</p>`;
+  if(rel.length) html += `<h3>相关术语（同条款共现）</h3>` +
+    rel.map(([n,w])=>`<a class="chip term" href="#/term/${encodeURIComponent(n)}">${esc(n)} ×${w}</a>`).join('');
+  html += `</div>`;
+  html += `<div class="card"><h2>出现位置：${docsCount} 部文件 · ${ids.length} 条条款</h2>
+    ${ids.length?clausesGroupedByDoc(ids,{skipTerm:name}):'<div class="empty">暂无收录条款</div>'}
+    <p class="note">提示：点击条款标题展开原文；条文中出现的其他术语可点击跳转。</p></div>`;
+  return html;
+}
+
+function relLines(docId){
+  const out=[];
+  KB.docRelations.forEach(r=>{
+    if(r.from===docId) out.push(`<div class="rel-line">本文件 <span class="arrow-lbl">${esc(r.type)}</span> <a href="#/doc/${r.to}">${esc(docById[r.to].code)}</a><div class="note">${esc(r.note)}</div></div>`);
+    if(r.to===docId) out.push(`<div class="rel-line"><a href="#/doc/${r.from}">${esc(docById[r.from].code)}</a> <span class="arrow-lbl">${esc(r.type)}</span> 本文件<div class="note">${esc(r.note)}</div></div>`);
+  });
+  KB.docCites.forEach(e=>{
+    if(e.from===docId) out.push(`<div class="rel-line">本文件 <span class="arrow-lbl">引用</span> <a href="#/doc/${e.to}">${esc(docById[e.to].code)}</a> <span class="note">（经条款 ${e.via.map(esc).join('、')}）</span></div>`);
+    if(e.to===docId) out.push(`<div class="rel-line"><a href="#/doc/${e.from}">${esc(docById[e.from].code)}</a> <span class="arrow-lbl">引用</span> 本文件 <span class="note">（经条款 ${e.via.map(esc).join('、')}）</span></div>`);
+  });
+  return out.join('');
+}
+
+function viewDocs(){
+  return `<div class="card"><h2>法规与标准文件</h2>
+    ${KB.documents.map(d=>{
+      const n = KB.clauses.filter(c=>c.doc===d.id).length;
+      return `<div class="rel-line"><a href="#/doc/${d.id}"><b>${esc(d.code)}</b></a> ${esc(d.name)} ${statusBadge(d)}
+        <span class="note">${esc(d.type)} · ${n?`收录 ${n} 条`:'未收录条文'}</span></div>`;
+    }).join('')}</div>
+  <div class="card"><h2>标准演化与引用网络</h2>${
+    KB.docRelations.map(r=>`<div class="rel-line"><a href="#/doc/${r.from}">${esc(docById[r.from].code)}</a> <span class="arrow-lbl" style="background:var(--brand-soft);color:var(--brand)">${esc(r.type)}</span> <a href="#/doc/${r.to}">${esc(docById[r.to].code)}</a><div class="note">${esc(r.note)}</div></div>`).join('')
+  }${
+    KB.docCites.map(e=>`<div class="rel-line"><a href="#/doc/${e.from}">${esc(docById[e.from].code)}</a> <span class="arrow-lbl">引用</span> <a href="#/doc/${e.to}">${esc(docById[e.to].code)}</a> <span class="note">经条款 ${e.via.map(esc).join('、')}</span></div>`).join('')
+  }</div>`;
+}
+
+function viewDoc(id){
+  const d = docById[id];
+  if(!d) return `<div class="card empty">未找到文件「${esc(id)}」</div>`;
+  const list = KB.clauses.filter(c=>c.doc===id);
+  return `<div class="card"><h2>${esc(d.code)} ${statusBadge(d)}</h2>
+    <p><b>${esc(d.name)}</b>${d.version?`（${esc(d.version)}）`:''}</p>
+    <p class="note">${esc(d.type)} · 发布机构：${esc(d.issuer)}${d.effective?` · 施行：${esc(d.effective)}`:''}<br>状态：${esc(d.status)}</p>
+    ${d.note?`<p class="note">※ ${esc(d.note)}</p>`:''}
+    ${d.source_url?`<p class="note"><a href="${esc(d.source_url)}" target="_blank" rel="noopener">来源 ↗</a></p>`:''}</div>
+  <div class="card"><h2>关联关系</h2>${relLines(id)||'<div class="empty">无已收录的关联关系</div>'}</div>
+  <div class="card"><h2>收录条款（${list.length}）</h2>
+    ${list.length?list.map(c=>clauseCard(c)).join(''):'<div class="empty">本文件仅作为关系节点，未收录条文</div>'}</div>`;
+}
+
+function viewSearch(q){
+  const canon = KB.nameMap[q];
+  let html='';
+  if(canon) return viewTerm(canon, canon!==q ? q : null);
+  // 模糊：术语名/别名包含
+  const termHits = KB.terms.filter(t=>t.name.includes(q)||t.aliases.some(a=>a.includes(q)));
+  // 全文：条款文本包含
+  const clauseHits = KB.clauses.filter(c=>c.text.includes(q)||c.title.includes(q));
+  if(!termHits.length && !clauseHits.length)
+    return `<div class="card empty">没有找到与「${esc(q)}」相关的术语或条文。<br><span class="note">演示库收录范围有限——这正是 MVP 阶段控制数据规模的取舍。</span></div>`;
+  if(termHits.length) html+=`<div class="card"><h2>匹配术语</h2>${termHits.map(t=>`<a class="chip term" href="#/term/${encodeURIComponent(t.name)}">${esc(t.name)}</a>`).join('')}</div>`;
+  if(clauseHits.length) html+=`<div class="card"><h2>全文命中 ${clauseHits.length} 条条款</h2>${clausesGroupedByDoc(clauseHits.map(c=>c.id),{highlight:q})}</div>`;
+  return html;
+}
+
+/* ---------- 图谱（手写 canvas 力导向） ---------- */
+let graphRAF=null;
+function viewGraph(){
+  setTimeout(initGraph,0);
+  return `<div class="card"><h2>知识图谱</h2>
+    <p class="note">圆点=术语，方块=法规文件。拖拽节点调整布局，点击节点查看详情。</p>
+    <div id="graph-wrap"><canvas id="graph"></canvas></div>
+    <div class="legend">
+      <span><span class="dot" style="background:#e0822c"></span>术语</span>
+      <span><span class="sq" style="background:#2563ab"></span>法规/标准（现行）</span>
+      <span><span class="sq" style="background:#9aa2ad"></span>已废止</span>
+      <span><span class="lin" style="border-color:#d8c9a8"></span>术语出现于</span>
+      <span><span class="lin" style="border-color:#2563ab"></span>引用</span>
+      <span><span class="lin dash" style="border-color:#c0392b"></span>替代/废止部分条文</span>
+    </div></div>`;
+}
+function initGraph(){
+  const cv = document.getElementById('graph'); if(!cv) return;
+  const dpr = window.devicePixelRatio||1;
+  const W = cv.clientWidth, H = 620;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const ctx = cv.getContext('2d'); ctx.scale(dpr,dpr);
+
+  const nodes=[], byKey={};
+  function addNode(n){ byKey[n.key]=n; nodes.push(n); }
+  KB.documents.forEach((d,i)=>addNode({key:'d:'+d.id,kind:'doc',label:d.code.replace('（2018年版）','(2018)'),full:d.name,dead:d.status.includes('废止')&&d.type.includes('已废止'),
+    x:W/2+Math.cos(i/KB.documents.length*6.283)*200, y:H/2+Math.sin(i/KB.documents.length*6.283)*200, vx:0,vy:0}));
+  KB.terms.forEach((t,i)=>addNode({key:'t:'+t.name,kind:'term',label:t.name,full:t.name,deg:(KB.termClauses[t.name]||[]).length,
+    x:W/2+Math.cos(i/KB.terms.length*6.283+1)*110, y:H/2+Math.sin(i/KB.terms.length*6.283+1)*110, vx:0,vy:0}));
+
+  const edges=[];
+  // 术语—文件（出现），按条款数加权
+  KB.terms.forEach(t=>{
+    const cnt={};
+    (KB.termClauses[t.name]||[]).forEach(id=>{const d=clauseById[id].doc; cnt[d]=(cnt[d]||0)+1;});
+    Object.entries(cnt).forEach(([d,w])=>edges.push({a:'t:'+t.name,b:'d:'+d,kind:'appear',w}));
+  });
+  KB.docCites.forEach(e=>edges.push({a:'d:'+e.from,b:'d:'+e.to,kind:'cite'}));
+  KB.docRelations.forEach(r=>edges.push({a:'d:'+r.from,b:'d:'+r.to,kind:'evolve',lbl:r.type}));
+
+  let drag=null, hover=null;
+  function tick(){
+    // 斥力
+    for(let i=0;i<nodes.length;i++) for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i],b=nodes[j];
+      let dx=a.x-b.x, dy=a.y-b.y, d2=dx*dx+dy*dy+0.01, d=Math.sqrt(d2);
+      const f=Math.min(2600/d2, 8);
+      dx/=d; dy/=d;
+      a.vx+=dx*f; a.vy+=dy*f; b.vx-=dx*f; b.vy-=dy*f;
+    }
+    // 弹簧
+    edges.forEach(e=>{
+      const a=byKey[e.a], b=byKey[e.b];
+      const rest = e.kind==='appear'?120:170;
+      let dx=b.x-a.x, dy=b.y-a.y, d=Math.sqrt(dx*dx+dy*dy)+0.01;
+      const f=(d-rest)*0.004*(e.kind==='appear'?Math.min(e.w,3):1.4);
+      dx/=d; dy/=d;
+      a.vx+=dx*f*d*0.05; a.vy+=dy*f*d*0.05; b.vx-=dx*f*d*0.05; b.vy-=dy*f*d*0.05;
+    });
+    // 向心 + 阻尼 + 边界
+    nodes.forEach(n=>{
+      n.vx+=(W/2-n.x)*0.0012; n.vy+=(H/2-n.y)*0.0012;
+      if(n!==drag){ n.x+=n.vx*=0.82; n.y+=n.vy*=0.82; }
+      n.x=Math.max(40,Math.min(W-40,n.x)); n.y=Math.max(26,Math.min(H-26,n.y));
+    });
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    edges.forEach(e=>{
+      const a=byKey[e.a], b=byKey[e.b];
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+      if(e.kind==='appear'){ ctx.strokeStyle='#e2d5b8'; ctx.lineWidth=Math.min(e.w,3); ctx.setLineDash([]); }
+      else if(e.kind==='cite'){ ctx.strokeStyle='#2563ab'; ctx.lineWidth=1.6; ctx.setLineDash([]); }
+      else { ctx.strokeStyle='#c0392b'; ctx.lineWidth=1.6; ctx.setLineDash([6,4]); }
+      ctx.stroke(); ctx.setLineDash([]);
+      if(e.kind!=='appear'){ // 方向箭头
+        const dx=b.x-a.x, dy=b.y-a.y, d=Math.sqrt(dx*dx+dy*dy);
+        const ux=dx/d, uy=dy/d, px=b.x-ux*34, py=b.y-uy*34;
+        ctx.beginPath(); ctx.moveTo(px,py);
+        ctx.lineTo(px-ux*9-uy*4.5, py-uy*9+ux*4.5);
+        ctx.lineTo(px-ux*9+uy*4.5, py-uy*9-ux*4.5);
+        ctx.closePath(); ctx.fillStyle=e.kind==='cite'?'#2563ab':'#c0392b'; ctx.fill();
+      }
+    });
+    ctx.font='12px -apple-system,"PingFang SC",sans-serif';
+    nodes.forEach(n=>{
+      const hot = n===hover;
+      if(n.kind==='term'){
+        const r=7+Math.min(n.deg||1,8);
+        ctx.beginPath(); ctx.arc(n.x,n.y,r,0,6.283);
+        ctx.fillStyle=hot?'#b35400':'#e0822c'; ctx.fill();
+        ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+        ctx.fillStyle='#7a4a12'; ctx.textAlign='center';
+        ctx.fillText(n.label, n.x, n.y-r-5);
+      }else{
+        ctx.textAlign='center';
+        const w=ctx.measureText(n.label).width+18;
+        ctx.fillStyle=n.dead?'#9aa2ad':(hot?'#1a4c85':'#2563ab');
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(n.x-w/2,n.y-12,w,24,6) : ctx.rect(n.x-w/2,n.y-12,w,24);
+        ctx.fill();
+        ctx.fillStyle='#fff'; ctx.fillText(n.label,n.x,n.y+4);
+      }
+    });
+  }
+  function loop(){ tick(); draw(); graphRAF=requestAnimationFrame(loop); }
+  if(graphRAF) cancelAnimationFrame(graphRAF);
+  loop();
+
+  function pick(ev){
+    const r=cv.getBoundingClientRect(), mx=ev.clientX-r.left, my=ev.clientY-r.top;
+    let best=null,bd=1e9;
+    nodes.forEach(n=>{
+      const d=Math.hypot(n.x-mx,n.y-my);
+      if(d<28 && d<bd){best=n;bd=d;}
+    });
+    return {node:best,mx,my};
+  }
+  let moved=false;
+  cv.addEventListener('pointerdown',ev=>{ const p=pick(ev); drag=p.node; moved=false; cv.setPointerCapture(ev.pointerId); });
+  cv.addEventListener('pointermove',ev=>{
+    const p=pick(ev);
+    if(drag){ drag.x=p.mx; drag.y=p.my; drag.vx=drag.vy=0; moved=true; }
+    else { hover=p.node; cv.style.cursor=p.node?'pointer':'grab'; cv.title=p.node?p.node.full:''; }
+  });
+  cv.addEventListener('pointerup',ev=>{
+    if(drag && !moved){
+      const n=drag;
+      go(n.kind==='term' ? 'term/'+encodeURIComponent(n.label) : 'doc/'+n.key.slice(2));
+    }
+    drag=null;
+  });
+}
+
+/* ---------- 搜索框 ---------- */
+const input=$('#q'), sugg=$('#sugg');
+function doSearch(q){ sugg.style.display='none'; if(q.trim()) go('search/'+encodeURIComponent(q.trim())); }
+input.addEventListener('input',()=>{
+  const q=input.value.trim();
+  if(!q){sugg.style.display='none';return;}
+  const hits=[];
+  KB.terms.forEach(t=>{
+    if(t.name.includes(q)) hits.push({label:t.name, target:t.name, hint:''});
+    t.aliases.forEach(a=>{ if(a.includes(q)) hits.push({label:a, target:t.name, hint:`→ 归并到「${t.name}」`}); });
+  });
+  const ft = KB.clauses.filter(c=>c.text.includes(q)).length;
+  sugg.innerHTML = hits.slice(0,8).map(h=>
+    `<div class="s" onclick="go('term/${encodeURIComponent(h.target)}${h.hint?'?from='+encodeURIComponent(h.label):''}')">🏷 ${esc(h.label)} <span class="alias-hint">${esc(h.hint)}</span></div>`).join('')
+    + (ft?`<div class="s" onclick="doSearch($('#q').value)">🔍 全文检索「${esc(q)}」（命中 ${ft} 条条款）</div>`:'')
+    || `<div class="s alias-hint">无匹配</div>`;
+  sugg.style.display='block';
+});
+input.addEventListener('keydown',ev=>{ if(ev.key==='Enter') doSearch(input.value); });
+document.addEventListener('click',ev=>{ if(!ev.target.closest('#searchbox')) sugg.style.display='none'; });
+
+/* ---------- 路由 ---------- */
+function go(path){ location.hash='#/'+path; }
+function render(){
+  if(graphRAF){ cancelAnimationFrame(graphRAF); graphRAF=null; }
+  sugg.style.display='none';
+  const h=(location.hash||'#/').slice(2);
+  const [pathQ, qs] = h.split('?');
+  const safeDecode = s=>{ try{ return decodeURIComponent(s); }catch(e){ return s; } };
+  const seg=pathQ.split('/').map(safeDecode);
+  let html, navKey='home';
+  if(seg[0]==='term' && seg[1]){ navKey='terms'; const from=new URLSearchParams(qs||'').get('from'); html=viewTerm(seg[1],from); }
+  else if(seg[0]==='terms'){ navKey='terms'; html=viewTerms(); }
+  else if(seg[0]==='doc' && seg[1]){ navKey='docs'; html=viewDoc(seg[1]); }
+  else if(seg[0]==='docs'){ navKey='docs'; html=viewDocs(); }
+  else if(seg[0]==='graph'){ navKey='graph'; html=viewGraph(); }
+  else if(seg[0]==='search' && seg[1]){ navKey=''; html=viewSearch(seg[1]); }
+  else html=viewHome();
+  $('#app').innerHTML=html;
+  document.querySelectorAll('nav a[data-nav]').forEach(a=>a.classList.toggle('active',a.dataset.nav===navKey));
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',render);
+render();
+</script>
+</body>
+</html>
