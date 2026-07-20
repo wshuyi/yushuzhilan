@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <!-- GSAP 和 Runtime 必须同步加载（pitfalls §1, §2） -->
+    <script src="../lib/gsap.min.js"></script>
+    <script src="../lib/hyperframe.runtime.iife.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1920px; height: 1080px; overflow: hidden;
+        background: #0a0a0a;
+        font-family: "Noto Sans SC", sans-serif;
+        color: #f5f5f7;
+      }
+      .bg-glow {
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(ellipse 900px 700px at 25% 40%, rgba(124,58,237,0.22), rgba(124,58,237,0) 60%),
+          radial-gradient(ellipse 800px 600px at 80% 70%, rgba(6,182,212,0.18), rgba(6,182,212,0) 60%);
+        pointer-events: none;
+      }
+      .frame { position: absolute; inset: 0; padding: 70px 100px; }
+      .ih-eyebrow {
+        font-size: 26px; letter-spacing: 0.35em; color: #06b6d4;
+        text-transform: uppercase; margin-bottom: 14px;
+      }
+      .ih-title {
+        font-size: 58px; font-weight: 700; line-height: 1.12;
+        color: #f5f5f7; letter-spacing: -0.02em;
+      }
+      .ih-sub { font-size: 26px; color: #94a3b8; margin-top: 14px; }
+      .ih-caption {
+        position: absolute; left: 100px; right: 100px; bottom: 60px;
+        font-size: 34px; color: #cbd5e1; text-align: center; opacity: 0; z-index: 2;
+      }
+
+      .stage { position: absolute; left: 100px; right: 100px; top: 270px; bottom: 170px; }
+
+      .card { background: #111827; border: 1px solid #334155; border-radius: 16px; }
+
+      #question { position: absolute; left: 0; top: 225px; width: 300px; height: 190px; padding: 22px 24px; }
+      #question .q-tag { font-size: 20px; color: #94a3b8; letter-spacing: 0.2em; margin-bottom: 12px; }
+      #question .q-text { font-size: 30px; line-height: 1.45; color: #f5f5f7; }
+
+      #fwd-band {
+        position: absolute; left: 270px; right: 270px; top: 288px; height: 64px; border-radius: 32px;
+        background: linear-gradient(90deg, rgba(6,182,212,0.04), rgba(6,182,212,0.32), rgba(6,182,212,0.04));
+        box-shadow: 0 0 24px rgba(6,182,212,0.25);
+        opacity: 0; z-index: 1;
+      }
+      .pkt {
+        position: absolute; top: 311px; left: 270px; width: 18px; height: 18px; border-radius: 50%;
+        background: #06b6d4; box-shadow: 0 0 14px #06b6d4; opacity: 0; z-index: 3;
+      }
+
+      #layer {
+        position: absolute; left: 560px; top: 150px; width: 600px; height: 350px;
+        border: 2px solid rgba(6,182,212,0.45); border-radius: 20px;
+        background: rgba(15,23,42,0.55); z-index: 2;
+      }
+      #layer .layer-title {
+        position: absolute; top: 14px; left: 0; right: 0;
+        text-align: center; font-size: 24px; color: #94a3b8;
+      }
+      .vec { position: absolute; width: 120px; height: 44px; opacity: 0; }
+      .vec svg line { transition: stroke 0.5s; }
+      .vec svg path { transition: fill 0.5s; }
+      .vec.lit svg line { stroke: #f59e0b; }
+      .vec.lit svg path { fill: #f59e0b; }
+
+      #output { position: absolute; left: 1440px; top: 225px; width: 240px; height: 190px; z-index: 2; }
+      #output .o-tag {
+        position: absolute; top: 16px; left: 0; right: 0;
+        text-align: center; font-size: 20px; color: #94a3b8; letter-spacing: 0.2em;
+      }
+      #digit {
+        position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        font-size: 110px; font-weight: 800; color: #f5f5f7; opacity: 0;
+      }
+      #output-q {
+        position: absolute; left: 1532px; top: 108px;
+        font-size: 88px; font-weight: 800; color: #f59e0b; opacity: 0; z-index: 5;
+      }
+
+      #lens { position: absolute; left: 710px; top: 170px; width: 300px; height: 300px; z-index: 5; }
+      .lens-ring {
+        position: absolute; inset: 0; border: 8px solid #7c3aed; border-radius: 50%;
+        background: rgba(124,58,237,0.07);
+        box-shadow: 0 0 30px rgba(124,58,237,0.5), inset 0 0 30px rgba(124,58,237,0.25);
+      }
+      .lens-handle {
+        position: absolute; left: 247px; top: 247px; width: 18px; height: 130px; border-radius: 9px;
+        background: #7c3aed; transform: rotate(45deg); transform-origin: top center;
+        box-shadow: 0 0 16px rgba(124,58,237,0.5);
+      }
+      #lens-q, #lens-label {
+        position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        opacity: 0;
+      }
+      #lens-q { font-size: 120px; font-weight: 800; color: #a78bfa; }
+      #lens-label { font-size: 36px; font-weight: 700; color: #c4b5fd; }
+
+      #fx { position: absolute; left: 0; top: 0; width: 1720px; height: 640px; pointer-events: none; z-index: 4; }
+
+      #concept-dot {
+        position: absolute; left: 848px; top: 48px; width: 24px; height: 24px; border-radius: 50%;
+        background: #f59e0b; box-shadow: 0 0 18px #f59e0b; opacity: 0; z-index: 5;
+      }
+      #concept-label {
+        position: absolute; left: 884px; top: 40px;
+        font-size: 34px; font-weight: 700; color: #f59e0b; opacity: 0; z-index: 5;
+      }
+
+      #half-label {
+        position: absolute; left: 560px; top: 518px; width: 600px;
+        text-align: center; font-size: 26px; color: #94a3b8; opacity: 0;
+      }
+      #kw-chips {
+        position: absolute; left: 560px; top: 564px; width: 600px;
+        display: flex; justify-content: center; gap: 22px;
+      }
+      .kw-chip {
+        padding: 10px 24px; border: 1px solid #f59e0b; border-radius: 999px;
+        background: rgba(245,158,11,0.10); color: #fbbf24; font-size: 24px; opacity: 0;
+      }
+      #limit-tag {
+        position: absolute; left: 1220px; top: 520px; width: 470px;
+        padding: 14px 20px; border: 1px solid #ef4444; border-radius: 10px;
+        background: rgba(239,68,68,0.10); color: #f87171; font-size: 24px; text-align: center; opacity: 0;
+      }
+
+      #mul-label { position: absolute; left: 0; top: 78px; width: 540px; font-size: 30px; opacity: 0; }
+      #mul-label .m-flow { color: #06b6d4; }
+      #mul-label .m-jac { color: #a78bfa; }
+      #jac-formula {
+        position: absolute; left: 0; top: 146px; width: 540px;
+        font-size: 25px; color: #94a3b8; line-height: 1.5; opacity: 0;
+      }
+
+      .summary-overlay {
+        position: absolute; left: 0; right: 0; top: 0; bottom: 150px;
+        background: rgba(10,10,10,0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        text-align: center; opacity: 0; z-index: 10;
+      }
+      .summary-overlay h2 { font-size: 64px; font-weight: 700; color: #f5f5f7; }
+      .summary-overlay .note { font-size: 28px; color: #cbd5e1; margin-top: 18px; }
+      .sum-pills { display: flex; gap: 26px; margin-top: 44px; }
+      .sum-pill {
+        padding: 16px 28px; border: 1px solid #7c3aed; border-radius: 14px;
+        background: rgba(124,58,237,0.12); font-size: 24px; color: #ddd6fe; opacity: 0;
+      }
+      .sum-pill b { color: #a78bfa; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="72.684"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div class="bg-glow"></div>
+      <div class="frame" id="frame">
+        <div class="ih-eyebrow">JACOBIAN LENS · J-透镜</div>
+        <div class="ih-title">J-透镜：从结果反推“谁贡献了力量”</div>
+        <div class="ih-sub">把信息流乘以雅可比矩阵，就能从输出反推：中间层的哪些向量，为最终结果贡献过力量。这就是新闻里“看见意识空间”的真身。</div>
+
+        <div class="stage" id="stage">
+          <div id="fwd-band"></div>
+          <div class="pkt" id="pkt-0"></div>
+          <div class="pkt" id="pkt-1"></div>
+          <div class="pkt" id="pkt-2"></div>
+
+          <div class="card" id="question">
+            <div class="q-tag">问题</div>
+            <div class="q-text">会织网的动物，有几条腿？</div>
+          </div>
+
+          <div id="layer">
+            <div class="layer-title">第 n 层 · 半成品信息流</div>
+            <div class="vec" id="vec-0" style="left:30px; top:100px;">
+              <svg width="120" height="44" viewBox="0 0 120 44"><line x1="8" y1="22" x2="96" y2="22" stroke="#64748b" stroke-width="5" stroke-linecap="round"/><path d="M96,10 L118,22 L96,34 Z" fill="#64748b"/></svg>
+            </div>
+            <div class="vec" id="vec-1" style="left:175px; top:100px;">
+              <svg width="120" height="44" viewBox="0 0 120 44"><line x1="8" y1="22" x2="96" y2="22" stroke="#64748b" stroke-width="5" stroke-linecap="round"/><path d="M96,10 L118,22 L96,34 Z" fill="#64748b"/></svg>
+            </div>
+            <div class="vec" id="vec-2" style="left:320px; top:100px;">
+              <svg width="120" height="44" viewBox="0 0 120 44"><line x1="8" y1="22" x2="96" y2="22" stroke="#64748b" stroke-width="5" stroke-linecap="round"/><path d="M96,10 L118,22 L96,34 Z" fill="#64748b"/></svg>
+            </div>
+            <div class="vec" id="vec-3" style="left:465px; top:100px;">
+              <svg width="120" height="44" viewBox="0 0 120 44"><line x1="8" y1="22" x2="96" y2="22" stroke="#64748b" stroke-width="5" stroke-linecap="round"/><path d="M96,10 L118,22 L96,34 Z" fill="#64748b"/></svg>
+            </div>
+            <div class="vec" id="vec-4" style="left:30px; top:230px;">
+              <svg width="120" height="44" viewBox="0 0 120 44"><line x1="8" y1="22" x2="96" y2="22" stroke="#64748b" stroke-width="5" stroke-linecap="round"/><path d="M96,10 L118,22 L96,34 Z" fill="#64748b"/></svg>
+            </div>
+            <div class="vec" id="vec-5" style="left:175px; top:230px;">
+              <svg width="120" height="44" viewBox="0 0 120 44"><line x1="8" y1="22" x2="96" y2="22" stroke="#64748b" stroke-width="5" stroke-linecap="round"/><path d="M96,10 L118,22 L96,34 Z" fill="#64748b"/></svg>
+            </div>
+            <div class="vec" id="vec-6" style="left:320px; top:230px;">
+              <svg width="120" height="44" viewBox="0 0 120 44"><line x1="8" y1="22" x2="96" y2="22" stroke="#64748b" stroke-width="5" stroke-linecap="round"/><path d="M96,10 L118,22 L96,34 Z" fill="#64748b"/></svg>
+            </div>
+            <div class="vec" id="vec-7" style="left:465px; top:230px;">
+              <svg width="120" height="44" viewBox="0 0 120 44"><line x1="8" y1="22" x2="96" y2="22" stroke="#64748b" stroke-width="5" stroke-linecap="round"/><path d="M96,10 L118,22 L96,34 Z" fill="#64748b"/></svg>
+            </div>
+          </div>
+
+          <div class="card" id="output">
+            <div class="o-tag">输出</div>
+            <div id="digit">8</div>
+          </div>
+          <div id="output-q">?</div>
+
+          <div id="lens">
+            <div class="lens-ring"></div>
+            <div class="lens-handle"></div>
+            <div id="lens-q">?</div>
+            <div id="lens-label">J-透镜</div>
+          </div>
+
+          <svg id="fx" width="1720" height="640" viewBox="0 0 1720 640">
+            <defs>
+              <marker id="arr-violet" markerWidth="12" markerHeight="12" refX="9" refY="4.5" orient="auto">
+                <path d="M0,0 L10,4.5 L0,9 Z" fill="#7c3aed"></path>
+              </marker>
+            </defs>
+            <path id="rev-path" d="M 1432,320 C 1350,180 1230,180 1152,320" fill="none" stroke="#7c3aed" stroke-width="7" stroke-linecap="round" marker-end="url(#arr-violet)" style="filter:drop-shadow(0 0 10px rgba(124,58,237,0.85));"></path>
+            <path id="conv-0" d="M 795,272 L 860,74" fill="none" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"></path>
+            <path id="conv-1" d="M 650,402 L 860,74" fill="none" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"></path>
+            <path id="conv-2" d="M 940,402 L 860,74" fill="none" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+
+          <div id="concept-dot"></div>
+          <div id="concept-label">蜘蛛</div>
+
+          <div id="half-label">半成品：多种可能方向</div>
+          <div id="kw-chips">
+            <div class="kw-chip">橘子</div>
+            <div class="kw-chip">完蛋了</div>
+            <div class="kw-chip">失败</div>
+          </div>
+          <div id="limit-tag">只看到关键词，看不到贡献过程</div>
+
+          <div id="mul-label"><span class="m-flow">信息流</span> × <span class="m-jac">雅可比矩阵</span></div>
+          <div id="jac-formula">雅可比矩阵：一个扰动 → 对最终输出的影响</div>
+        </div>
+
+        <div class="ih-caption" id="caption"></div>
+
+        <div class="summary-overlay" id="summary">
+          <h2>从反方向看：谁贡献了力量</h2>
+          <div class="note">看得见关键词 ≠ 看得懂过程——下一步要验证</div>
+          <div class="sum-pills">
+            <div class="sum-pill"><b>反向</b>｜知道结果，反推前置条件</div>
+            <div class="sum-pill"><b>雅可比</b>｜描述“扰动对最终输出的影响”</div>
+            <div class="sum-pill"><b>局限</b>｜只看到关键词，看不到贡献的过程</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const scope = document.getElementById('root');
+
+      const AUDIO_DURATION = 72.684;
+      const CUES = {
+        intro:      { start:  0.0,   end:  7.632 },
+        forward:    { start:  7.812, end: 15.012 },
+        halfbaked:  { start: 15.192, end: 21.6 },
+        question:   { start: 21.78,  end: 28.26 },
+        lens:       { start: 28.44,  end: 35.748 },
+        jacobian:   { start: 35.928, end: 42.444 },
+        reverse:    { start: 42.624, end: 48.132 },
+        found:      { start: 48.312, end: 57.096 },
+        more:       { start: 57.276, end: 63.54 },
+        conclusion: { start: 63.72,  end: 72.36 }
+      };
+      const CAPTIONS = {
+        intro:      '主角登场：J-透镜。它要回答——模型脑子里的“蜘蛛”，是怎么被科学家看到的？',
+        forward:    '先回顾正常过程：信息流向前，经过注意力和多层感知，最终输出答案“8”。',
+        halfbaked:  '但在中间层，信息流还是半成品——它同时含着很多种可能的方向。',
+        question:   '工程师想问：最终为“8”这个结果贡献力量的，到底是哪些中间状态？',
+        lens:       '方法是：把信息流，乘以雅可比矩阵。这个算符，就被叫做 J-透镜。',
+        jacobian:   '雅可比矩阵描述的，是“一个扰动，会对最终输出产生什么影响”。',
+        reverse:    '所以这是一次反向计算：知道结果，反推前置条件。',
+        found:      '反推之后发现：中间层有几个向量，共同指向“蜘蛛”这个概念的方向。它们一起，贡献了力量。',
+        more:       '同样的方法，还在别的实验里看到了“橘子”、“完蛋了”、“失败”这些关键词。',
+        conclusion: 'J-透镜不打扰信息流，它只是从反方向看：哪些因素，为最终的流向贡献了力量。'
+      };
+
+      const $ = function (sel) { return scope.querySelector(sel); };
+      const $$ = function (sel) { return scope.querySelectorAll(sel); };
+
+      const capEl = $('#caption');
+      function setCaption(id) {
+        return function () {
+          const text = CAPTIONS[id];
+          gsap.to(capEl, { opacity: 0, duration: 0.18, ease: 'power1.in', onComplete: function () {
+            capEl.textContent = text;
+            gsap.to(capEl, { opacity: 1, duration: 0.35, ease: 'power1.out' });
+          }});
+        };
+      }
+
+      // ---- prep：散乱向量方向（旋转元素一律 gsap.set 初始化） ----
+      const scatter = [-42, 28, -18, 55, -64, 12, 38, -30];
+      scatter.forEach(function (r, i) { gsap.set($('#vec-' + i), { rotation: r, transformOrigin: '50% 50%' }); });
+      gsap.set($('#output-q'), { transformOrigin: '50% 50%' });
+      gsap.set($('#concept-dot'), { transformOrigin: '50% 50%' });
+      gsap.set($$('.kw-chip'), { y: 16 });
+      gsap.set($$('.sum-pill'), { y: 14 });
+
+      // ---- prep：strokeDashoffset 画线初始化 ----
+      ['#rev-path', '#conv-0', '#conv-1', '#conv-2'].forEach(function (sel) {
+        const p = $(sel);
+        const L = p.getTotalLength();
+        p.style.strokeDasharray = String(L);
+        p.style.strokeDashoffset = String(L);
+      });
+
+      // ---- intro：透镜落下，镜片里问号闪烁 ----
+      tl.add(setCaption('intro'), CUES.intro.start);
+      tl.fromTo($('#lens'), { y: -620 }, { y: 0, duration: 1.1, ease: 'bounce.out' }, CUES.intro.start + 0.3);
+      tl.fromTo($('#lens-q'), { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power1.inOut' }, CUES.intro.start + 1.6);
+      tl.to($('#lens-q'), { opacity: 0.15, duration: 0.5, yoyo: true, repeat: 5, ease: 'power1.inOut' }, CUES.intro.start + 2.1);
+      tl.to($('#lens-q'), { opacity: 1, duration: 0.3 }, CUES.intro.start + 5.4);
+
+      // ---- forward：正向流带亮起，信息包左→右，输出 8 弹落 ----
+      tl.add(setCaption('forward'), CUES.forward.start);
+      tl.to($('#lens-q'), { opacity: 0, duration: 0.3 }, CUES.forward.start);
+      tl.to($('#lens'), { y: -250, scale: 0.7, opacity: 0.65, duration: 0.9, ease: 'power2.inOut' }, CUES.forward.start + 0.1);
+      tl.to($('#fwd-band'), { opacity: 1, duration: 0.7, ease: 'power1.out' }, CUES.forward.start + 0.3);
+      for (let i = 0; i < 3; i++) {
+        const t0 = CUES.forward.start + 0.9 + i * 0.45;
+        tl.set($('#pkt-' + i), { x: 0 }, t0);
+        tl.to($('#pkt-' + i), { opacity: 1, duration: 0.15 }, t0);
+        tl.to($('#pkt-' + i), { x: 1170, duration: 2.0, ease: 'power1.in' }, t0 + 0.15);
+        tl.to($('#pkt-' + i), { opacity: 0, duration: 0.25 }, t0 + 1.95);
+      }
+      tl.fromTo($('#digit'), { y: -130, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: 'bounce.out' }, CUES.forward.start + 4.1);
+
+      // ---- halfbaked：8 根向量淡入、方向散乱 ----
+      tl.add(setCaption('halfbaked'), CUES.halfbaked.start);
+      tl.to($$('.vec'), { opacity: 0.6, duration: 0.5, stagger: 0.12, ease: 'power1.out' }, CUES.halfbaked.start + 0.4);
+      tl.to($('#half-label'), { opacity: 1, duration: 0.6 }, CUES.halfbaked.start + 1.7);
+
+      // ---- question：输出上方大问号脉冲 ----
+      tl.add(setCaption('question'), CUES.question.start);
+      tl.fromTo($('#output-q'), { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2)' }, CUES.question.start + 0.3);
+      tl.to($('#output-q'), { scale: 1.18, duration: 0.45, yoyo: true, repeat: 3, ease: 'sine.inOut' }, CUES.question.start + 0.9);
+
+      // ---- lens：透镜平移套住中间层 ----
+      tl.add(setCaption('lens'), CUES.lens.start);
+      tl.to($('#output-q'), { opacity: 0, duration: 0.3 }, CUES.lens.start);
+      tl.to($('#lens'), { y: 0, scale: 1.9, opacity: 1, duration: 1.3, ease: 'power2.inOut' }, CUES.lens.start + 0.2);
+      tl.to($('#lens-label'), { opacity: 1, duration: 0.5 }, CUES.lens.start + 1.3);
+      tl.to($('#mul-label'), { opacity: 1, duration: 0.6 }, CUES.lens.start + 1.8);
+
+      // ---- jacobian：公式条淡入 ----
+      tl.add(setCaption('jacobian'), CUES.jacobian.start);
+      tl.to($('#jac-formula'), { opacity: 1, duration: 0.7 }, CUES.jacobian.start + 0.4);
+
+      // ---- reverse：violet 反向光束 输出"8"→中间层（右→左），正向带变暗 ----
+      tl.add(setCaption('reverse'), CUES.reverse.start);
+      tl.to($('#rev-path'), { strokeDashoffset: 0, duration: 2.6, ease: 'power2.inOut' }, CUES.reverse.start + 0.3);
+      tl.to($('#fwd-band'), { opacity: 0.12, duration: 1.2 }, CUES.reverse.start + 0.3);
+
+      // ---- found：vec-1/4/6 amber 点亮并转向「蜘蛛」概念点，汇聚线画出 ----
+      tl.add(setCaption('found'), CUES.found.start);
+      tl.add(function () { ['#vec-1', '#vec-4', '#vec-6'].forEach(function (s) { $(s).classList.add('lit'); }); }, CUES.found.start + 0.3);
+      tl.to($('#vec-1'), { rotation: -72.9, opacity: 1, duration: 0.9, ease: 'power2.inOut' }, CUES.found.start + 0.3);
+      tl.to($('#vec-4'), { rotation: -58.4, opacity: 1, duration: 0.9, ease: 'power2.inOut' }, CUES.found.start + 0.45);
+      tl.to($('#vec-6'), { rotation: -103.2, opacity: 1, duration: 0.9, ease: 'power2.inOut' }, CUES.found.start + 0.6);
+      tl.to(['#vec-0', '#vec-2', '#vec-3', '#vec-5', '#vec-7'].map($), { opacity: 0.22, duration: 0.6 }, CUES.found.start + 0.9);
+      tl.to($('#conv-0'), { strokeDashoffset: 0, duration: 0.8, ease: 'power2.out' }, CUES.found.start + 1.2);
+      tl.to($('#conv-1'), { strokeDashoffset: 0, duration: 0.8, ease: 'power2.out' }, CUES.found.start + 1.35);
+      tl.to($('#conv-2'), { strokeDashoffset: 0, duration: 0.8, ease: 'power2.out' }, CUES.found.start + 1.5);
+      tl.fromTo($('#concept-dot'), { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: 'back.out(2.5)' }, CUES.found.start + 1.9);
+      tl.to($('#concept-label'), { opacity: 1, duration: 0.5 }, CUES.found.start + 2.3);
+
+      // ---- more：关键词 chips 弹出 ----
+      tl.add(setCaption('more'), CUES.more.start);
+      tl.to($$('.kw-chip'), { opacity: 1, y: 0, duration: 0.5, stagger: 0.3, ease: 'back.out(1.7)' }, CUES.more.start + 0.4);
+
+      // ---- conclusion：局限标签先淡入，随后 summary overlay ----
+      tl.add(setCaption('conclusion'), CUES.conclusion.start);
+      tl.to($('#limit-tag'), { opacity: 1, duration: 0.8 }, CUES.conclusion.start + 0.2);
+      tl.to($('#summary'), { opacity: 1, duration: 0.9, ease: 'power1.out' }, CUES.conclusion.start + 1.4);
+      tl.to($$('.sum-pill'), { opacity: 1, y: 0, duration: 0.5, stagger: 0.18 }, CUES.conclusion.start + 2.1);
+
+      // ---- 尾端 anchor（BLOCKING） ----
+      tl.to($('#frame'), { opacity: 1, duration: 0.05, ease: 'none' }, AUDIO_DURATION - 0.05);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

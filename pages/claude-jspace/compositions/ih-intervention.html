@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <!-- GSAP 和 Runtime 必须同步加载（pitfalls §1, §2） -->
+    <script src="../lib/gsap.min.js"></script>
+    <script src="../lib/hyperframe.runtime.iife.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1920px; height: 1080px; overflow: hidden;
+        background: #0a0a0a;
+        font-family: "Noto Sans SC", sans-serif;
+        color: #f5f5f7;
+      }
+      .bg-glow {
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(ellipse 900px 700px at 25% 40%, rgba(34,197,94,0.14), rgba(34,197,94,0) 60%),
+          radial-gradient(ellipse 800px 600px at 80% 70%, rgba(6,182,212,0.16), rgba(6,182,212,0) 60%);
+        pointer-events: none;
+      }
+      .frame { position: absolute; inset: 0; padding: 70px 100px; }
+      .ih-eyebrow {
+        font-size: 26px; letter-spacing: 0.35em; color: #06b6d4;
+        text-transform: uppercase; margin-bottom: 14px;
+      }
+      .ih-title {
+        font-size: 58px; font-weight: 700; line-height: 1.12;
+        color: #f5f5f7; letter-spacing: -0.02em;
+      }
+      .ih-sub { font-size: 26px; color: #94a3b8; margin-top: 14px; }
+      .ih-caption {
+        position: absolute; left: 100px; right: 100px; bottom: 60px;
+        font-size: 34px; color: #cbd5e1; text-align: center; opacity: 0; z-index: 2;
+      }
+
+      .stage { position: absolute; left: 100px; right: 100px; top: 270px; bottom: 170px; }
+
+      .card { background: #111827; border: 1px solid #334155; border-radius: 16px; }
+
+      #ask-banner {
+        position: absolute; left: 460px; top: 0; width: 800px; height: 64px;
+        border: 1px solid rgba(6,182,212,0.6); border-radius: 12px;
+        background: rgba(6,182,212,0.08);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 28px; color: #67e8f9; opacity: 0; z-index: 2;
+      }
+
+      #mn-question { position: absolute; left: 0; top: 230px; width: 260px; height: 170px; padding: 20px 22px; opacity: 0; }
+      #mn-question .q-tag { font-size: 18px; color: #94a3b8; letter-spacing: 0.2em; margin-bottom: 10px; }
+      #mn-question .q-text { font-size: 25px; line-height: 1.45; color: #f5f5f7; }
+
+      #mn-layer {
+        position: absolute; left: 380px; top: 180px; width: 320px; height: 270px;
+        border: 2px solid rgba(6,182,212,0.45); border-radius: 18px;
+        background: rgba(15,23,42,0.55); opacity: 0; z-index: 2;
+      }
+      #mn-layer .layer-title {
+        position: absolute; top: 12px; left: 0; right: 0;
+        text-align: center; font-size: 20px; color: #94a3b8;
+      }
+      #vec-concept { position: absolute; left: 150px; top: 112px; width: 120px; height: 44px; opacity: 0; }
+      #vec-concept svg line { transition: stroke 0.8s; }
+      #vec-concept svg path { transition: fill 0.8s; }
+      #vec-concept.green svg line { stroke: #22c55e; }
+      #vec-concept.green svg path { fill: #22c55e; }
+
+      #swapper { position: absolute; left: 830px; top: 140px; width: 200px; height: 360px; z-index: 3; }
+      .slot-frame {
+        position: absolute; inset: 0;
+        border: 3px dashed rgba(124,58,237,0.7); border-radius: 18px;
+        background: rgba(124,58,237,0.06);
+      }
+      .slot-label {
+        position: absolute; top: -36px; left: -20px; right: -20px;
+        text-align: center; font-size: 19px; color: #a78bfa;
+      }
+      #badge {
+        position: absolute; top: -20px; right: -30px;
+        padding: 6px 16px; background: #ef4444; border-radius: 999px;
+        font-size: 19px; font-weight: 700; color: #fff; opacity: 0;
+      }
+
+      .concept-card {
+        position: absolute; width: 160px; height: 100px; border-radius: 14px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 4;
+      }
+      .concept-card .c-word { font-size: 34px; font-weight: 800; }
+      .concept-card .c-sub { font-size: 16px; opacity: 0.85; margin-top: 4px; }
+      #card-spider {
+        left: 850px; top: 270px;
+        background: rgba(245,158,11,0.14); border: 2px solid #f59e0b; color: #fbbf24; opacity: 0;
+      }
+      #card-ant {
+        left: 1100px; top: 290px;
+        background: rgba(34,197,94,0.12); border: 2px solid #22c55e; color: #4ade80; opacity: 0;
+      }
+
+      #output { position: absolute; left: 1470px; top: 230px; width: 210px; height: 170px; opacity: 0; z-index: 2; perspective: 800px; }
+      #output .o-tag {
+        position: absolute; top: 14px; left: 0; right: 0;
+        text-align: center; font-size: 18px; color: #94a3b8; letter-spacing: 0.2em;
+      }
+      #digit {
+        position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        font-size: 100px; font-weight: 800; color: #f5f5f7;
+      }
+      #digit-note {
+        position: absolute; left: 1410px; top: 416px; width: 330px;
+        text-align: center; font-size: 21px; color: #94a3b8; opacity: 0;
+      }
+      #link-q {
+        position: absolute; left: 1232px; top: 238px;
+        font-size: 64px; font-weight: 800; color: #f59e0b; opacity: 0; z-index: 5;
+      }
+
+      #fx { position: absolute; left: 0; top: 0; width: 1720px; height: 640px; pointer-events: none; z-index: 3; }
+      #lnk-main { transition: stroke 0.8s; }
+      #lnk-main.green { stroke: #22c55e; filter: drop-shadow(0 0 8px rgba(34,197,94,0.8)); }
+
+      .story-label { position: absolute; font-size: 24px; font-weight: 700; color: #f87171; opacity: 0; z-index: 4; }
+      .story-label .story-sub { font-size: 18px; font-weight: 400; color: #fca5a5; margin-top: 4px; }
+      #story-a-label { left: 400px; top: 44px; }
+      #story-b-label { left: 1060px; top: 44px; }
+      .cross { position: absolute; font-size: 54px; font-weight: 800; color: #ef4444; opacity: 0; z-index: 4; }
+      #cross-a { left: 700px; top: 100px; }
+      #cross-b { left: 892px; top: 100px; }
+
+      .rpkt {
+        position: absolute; top: 306px; left: 262px; width: 18px; height: 18px; border-radius: 50%;
+        background: #06b6d4; box-shadow: 0 0 14px #06b6d4; opacity: 0; z-index: 5;
+      }
+
+      #stamp {
+        position: absolute; left: 1300px; top: 120px; width: 180px; height: 180px;
+        border: 6px solid #22c55e; border-radius: 50%;
+        background: rgba(34,197,94,0.10);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        color: #4ade80; opacity: 0; z-index: 6;
+      }
+      #stamp .s1 { font-size: 30px; font-weight: 800; }
+      #stamp .s2 { font-size: 20px; margin-top: 4px; }
+
+      #verdict-pills {
+        position: absolute; left: 460px; top: 540px; width: 800px;
+        display: flex; justify-content: center; gap: 36px;
+      }
+      .vp { padding: 14px 30px; border-radius: 999px; font-size: 25px; opacity: 0; }
+      .vp.gray { border: 1px solid #64748b; color: #94a3b8; background: rgba(100,116,139,0.10); }
+      .vp.green { border: 1px solid #22c55e; color: #4ade80; background: rgba(34,197,94,0.12); }
+
+      .summary-overlay {
+        position: absolute; left: 0; right: 0; top: 0; bottom: 150px;
+        background: rgba(10,10,10,0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        text-align: center; opacity: 0; z-index: 10;
+      }
+      .summary-overlay h2 { font-size: 64px; font-weight: 700; color: #f5f5f7; }
+      .summary-overlay .note { font-size: 28px; color: #cbd5e1; margin-top: 18px; }
+      .sum-pills { display: flex; gap: 26px; margin-top: 44px; }
+      .sum-pill {
+        padding: 16px 28px; border: 1px solid #22c55e; border-radius: 14px;
+        background: rgba(34,197,94,0.10); font-size: 24px; color: #bbf7d0; opacity: 0;
+      }
+      .sum-pill b { color: #4ade80; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="53.208"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div class="bg-glow"></div>
+      <div class="frame" id="frame">
+        <div class="ih-eyebrow">INTERVENTION · 干预验证</div>
+        <div class="ih-title">干预验证：把“蜘蛛”换成“蚂蚁”</div>
+        <div class="ih-sub">透镜看到关键词，可能只是误读。工程师做了决定性一步：把 J-空间里的“蜘蛛”换成“蚂蚁”——输出从 8 变成了 6。</div>
+
+        <div class="stage" id="stage">
+          <div id="ask-banner">会织网的动物，有几条腿？</div>
+
+          <div class="card" id="mn-question">
+            <div class="q-tag">问题</div>
+            <div class="q-text">会织网的动物，有几条腿？</div>
+          </div>
+
+          <div id="mn-layer">
+            <div class="layer-title">中间层 · J-空间</div>
+            <div id="vec-concept">
+              <svg width="120" height="44" viewBox="0 0 120 44"><line x1="8" y1="22" x2="96" y2="22" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/><path d="M96,10 L118,22 L96,34 Z" fill="#f59e0b"/></svg>
+            </div>
+          </div>
+
+          <div id="swapper">
+            <div class="slot-frame"></div>
+            <div class="slot-label">J-空间 · 概念槽位</div>
+            <div id="badge">干预</div>
+          </div>
+
+          <div class="concept-card" id="card-spider">
+            <div class="c-word">蜘蛛</div>
+            <div class="c-sub">概念投影</div>
+          </div>
+          <div class="concept-card" id="card-ant">
+            <div class="c-word">蚂蚁</div>
+            <div class="c-sub">概念投影</div>
+          </div>
+
+          <div class="card" id="output">
+            <div class="o-tag">输出</div>
+            <div id="digit">8</div>
+          </div>
+          <div id="digit-note">蜘蛛 8 条腿 / 蚂蚁 6 条腿</div>
+          <div id="link-q">?</div>
+
+          <svg id="fx" width="1720" height="640" viewBox="0 0 1720 640">
+            <path id="lnk-q-layer" d="M 262,315 L 376,315" fill="none" stroke="#06b6d4" stroke-width="4" stroke-linecap="round"></path>
+            <path id="lnk-layer-swap" d="M 704,315 L 826,315" fill="none" stroke="#06b6d4" stroke-width="4" stroke-linecap="round"></path>
+            <path id="lnk-main" d="M 1014,315 L 1466,315" fill="none" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"></path>
+            <path id="story-a" d="M 500,96 L 1140,196" fill="none" stroke="#ef4444" stroke-width="4" stroke-linecap="round"></path>
+            <path id="story-b" d="M 1140,96 L 500,196" fill="none" stroke="#ef4444" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+
+          <div class="story-label" id="story-a-label">正着解读 ✓?<div class="story-sub">“它在想蜘蛛”</div></div>
+          <div class="story-label" id="story-b-label">反着解读 ✓?<div class="story-sub">“只是碰巧激活”</div></div>
+          <div class="cross" id="cross-a">✗</div>
+          <div class="cross" id="cross-b">✗</div>
+
+          <div class="rpkt" id="rpkt-0"></div>
+          <div class="rpkt" id="rpkt-1"></div>
+          <div class="rpkt" id="rpkt-2"></div>
+
+          <div id="stamp">
+            <div class="s1">验证 ✓</div>
+            <div class="s2">因果坐实</div>
+          </div>
+
+          <div id="verdict-pills">
+            <div class="vp gray">看得见关键词 = 解读</div>
+            <div class="vp green">改得动结果 = 验证</div>
+          </div>
+        </div>
+
+        <div class="ih-caption" id="caption"></div>
+
+        <div class="summary-overlay" id="summary">
+          <h2>改得动结果，才叫验证</h2>
+          <div class="note">这，才是新闻背后真正的技术</div>
+          <div class="sum-pills">
+            <div class="sum-pill"><b>怀疑</b>｜同一堆关键词，正着反着都能编故事</div>
+            <div class="sum-pill"><b>干预</b>｜替换概念投影，其他条件原封不动</div>
+            <div class="sum-pill"><b>坐实</b>｜输出 8→6：概念是结果的真正原因</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const scope = document.getElementById('root');
+
+      const AUDIO_DURATION = 53.208;
+      const CUES = {
+        intro:      { start:  0.0,   end:  5.112 },
+        misread:    { start:  5.292, end: 13.104 },
+        verify:     { start: 13.284, end: 16.596 },
+        swap:       { start: 16.776, end: 21.204 },
+        rerun:      { start: 21.384, end: 27.288 },
+        flip:       { start: 27.468, end: 33.876 },
+        causal:     { start: 34.056, end: 42.048 },
+        meaning:    { start: 42.228, end: 48.06 },
+        conclusion: { start: 48.24,  end: 52.92 }
+      };
+      const CAPTIONS = {
+        intro:      '透镜看到了“蜘蛛”，就能断定它是答案的原因吗？不能。',
+        misread:    '一堆关键词摆在那儿，正着能编一个故事，反着也能编一个。纯解读，很可能是错的。',
+        verify:     '所以，工程师做了决定性的一步：干预。',
+        swap:       '他们把 J-空间里“蜘蛛”的投影，替换成了“蚂蚁”。',
+        rerun:      '其他条件原封不动，让模型重新回答：会织网的动物，有几条腿？',
+        flip:       '输出的答案，从 8 变成了 6。蜘蛛八条腿，蚂蚁六条腿。',
+        causal:     '改动了中间的那个概念，结果就跟着变。这就坐实了：它是实实在在的原因，不是巧合。',
+        meaning:    '看得见关键词，只能叫解读；改得动结果，才叫验证。',
+        conclusion: '这，才是“Claude 长出意识”这条新闻背后，真正的技术。'
+      };
+
+      const $ = function (sel) { return scope.querySelector(sel); };
+      const $$ = function (sel) { return scope.querySelectorAll(sel); };
+
+      const capEl = $('#caption');
+      function setCaption(id) {
+        return function () {
+          const text = CAPTIONS[id];
+          gsap.to(capEl, { opacity: 0, duration: 0.18, ease: 'power1.in', onComplete: function () {
+            capEl.textContent = text;
+            gsap.to(capEl, { opacity: 1, duration: 0.35, ease: 'power1.out' });
+          }});
+        };
+      }
+
+      // ---- prep ----
+      gsap.set($('#link-q'), { transformOrigin: '50% 50%' });
+      gsap.set($('#ask-banner'), { transformOrigin: '50% 50%' });
+      gsap.set($('#stamp'), { rotation: -14, transformOrigin: '50% 50%' });
+      gsap.set($('#digit'), { transformOrigin: '50% 50%' });
+      gsap.set($$('.vp'), { y: 16 });
+      gsap.set($$('.sum-pill'), { y: 14 });
+
+      // ---- prep：strokeDashoffset 画线初始化 ----
+      ['#lnk-q-layer', '#lnk-layer-swap', '#lnk-main', '#story-a', '#story-b'].forEach(function (sel) {
+        const p = $(sel);
+        const L = p.getTotalLength();
+        p.style.strokeDasharray = String(L);
+        p.style.strokeDashoffset = String(L);
+      });
+
+      // ---- intro：mini-net 亮起，蜘蛛卡与输出 8 就位，连线上大问号 ----
+      tl.add(setCaption('intro'), CUES.intro.start);
+      tl.to($('#ask-banner'), { opacity: 1, duration: 0.5 }, CUES.intro.start + 0.2);
+      tl.to($('#mn-question'), { opacity: 1, duration: 0.5 }, CUES.intro.start + 0.4);
+      tl.to($('#mn-layer'), { opacity: 1, duration: 0.5 }, CUES.intro.start + 0.6);
+      tl.to($('#vec-concept'), { opacity: 1, duration: 0.5 }, CUES.intro.start + 0.9);
+      tl.to($('#lnk-q-layer'), { strokeDashoffset: 0, duration: 0.5 }, CUES.intro.start + 0.9);
+      tl.to($('#lnk-layer-swap'), { strokeDashoffset: 0, duration: 0.5 }, CUES.intro.start + 1.1);
+      tl.fromTo($('#card-spider'), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, ease: 'back.out(1.5)' }, CUES.intro.start + 1.2);
+      tl.to($('#lnk-main'), { strokeDashoffset: 0, duration: 0.7 }, CUES.intro.start + 1.5);
+      tl.to($('#output'), { opacity: 1, duration: 0.5 }, CUES.intro.start + 1.9);
+      tl.fromTo($('#link-q'), { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2)' }, CUES.intro.start + 2.4);
+      tl.to($('#link-q'), { scale: 1.15, duration: 0.5, yoyo: true, repeat: 3, ease: 'sine.inOut' }, CUES.intro.start + 2.9);
+
+      // ---- misread：两种故事交叉出现、抖动，两个 red ✗ 落下 ----
+      tl.add(setCaption('misread'), CUES.misread.start);
+      tl.to($('#story-a'), { strokeDashoffset: 0, duration: 0.8, ease: 'power2.out' }, CUES.misread.start + 0.3);
+      tl.to($('#story-a-label'), { opacity: 1, duration: 0.5 }, CUES.misread.start + 0.7);
+      tl.to($('#story-b'), { strokeDashoffset: 0, duration: 0.8, ease: 'power2.out' }, CUES.misread.start + 1.0);
+      tl.to($('#story-b-label'), { opacity: 1, duration: 0.5 }, CUES.misread.start + 1.4);
+      tl.to([$('#story-a'), $('#story-a-label')], { x: 7, duration: 0.09, yoyo: true, repeat: 7, ease: 'none' }, CUES.misread.start + 2.2);
+      tl.to([$('#story-b'), $('#story-b-label')], { x: -7, duration: 0.09, yoyo: true, repeat: 7, ease: 'none' }, CUES.misread.start + 2.9);
+      tl.fromTo($('#cross-a'), { opacity: 0, y: -26 }, { opacity: 1, y: 0, duration: 0.5, ease: 'bounce.out' }, CUES.misread.start + 4.0);
+      tl.fromTo($('#cross-b'), { opacity: 0, y: -26 }, { opacity: 1, y: 0, duration: 0.5, ease: 'bounce.out' }, CUES.misread.start + 4.5);
+
+      // ---- verify：故事退场，替换器从底部升起，"干预"徽章别上 ----
+      tl.add(setCaption('verify'), CUES.verify.start);
+      tl.to([$('#story-a'), $('#story-b'), $('#story-a-label'), $('#story-b-label'), $('#cross-a'), $('#cross-b')], { opacity: 0, duration: 0.4 }, CUES.verify.start);
+      tl.fromTo($('#swapper'), { opacity: 0, y: 420 }, { opacity: 1, y: 0, duration: 0.9, ease: 'back.out(1.2)' }, CUES.verify.start + 0.3);
+      tl.fromTo($('#badge'), { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.45, ease: 'back.out(2.5)' }, CUES.verify.start + 1.1);
+      tl.to($('#card-ant'), { opacity: 0.85, duration: 0.5 }, CUES.verify.start + 1.5);
+
+      // ---- swap：蜘蛛卡抽出上滑，蚂蚁卡插入同一槽位，向量 amber→green ----
+      tl.add(setCaption('swap'), CUES.swap.start);
+      tl.to($('#link-q'), { opacity: 0, duration: 0.3 }, CUES.swap.start);
+      tl.to($('#card-spider'), { y: -430, opacity: 0, duration: 1.0, ease: 'power2.in' }, CUES.swap.start + 0.3);
+      tl.to($('#card-ant'), { x: -250, y: -20, opacity: 1, duration: 1.1, ease: 'power2.inOut' }, CUES.swap.start + 0.9);
+      tl.add(function () { $('#vec-concept').classList.add('green'); }, CUES.swap.start + 1.4);
+      tl.to($('#lnk-main'), { opacity: 0.35, duration: 0.6 }, CUES.swap.start + 1.0);
+
+      // ---- rerun：问题横幅脉冲，cyan 信息包重跑正向路径 ----
+      tl.add(setCaption('rerun'), CUES.rerun.start);
+      tl.to($('#ask-banner'), { scale: 1.06, duration: 0.35, yoyo: true, repeat: 3, ease: 'sine.inOut' }, CUES.rerun.start + 0.2);
+      for (let i = 0; i < 3; i++) {
+        const t0 = CUES.rerun.start + 0.8 + i * 0.4;
+        tl.set($('#rpkt-' + i), { x: 0 }, t0);
+        tl.to($('#rpkt-' + i), { opacity: 1, duration: 0.15 }, t0);
+        tl.to($('#rpkt-' + i), { x: 1204, duration: 2.4, ease: 'power1.inOut' }, t0 + 0.15);
+        tl.to($('#rpkt-' + i), { opacity: 0, duration: 0.25 }, t0 + 2.35);
+      }
+
+      // ---- flip：输出数字翻转 8→6 ----
+      tl.add(setCaption('flip'), CUES.flip.start);
+      tl.to($('#digit'), { rotationX: 90, duration: 0.45, ease: 'power2.in' }, CUES.flip.start + 0.4);
+      tl.add(function () {
+        const d = $('#digit');
+        d.textContent = '6';
+        d.style.color = '#4ade80';
+      }, CUES.flip.start + 0.87);
+      tl.fromTo($('#digit'), { rotationX: -90 }, { rotationX: 0, duration: 0.55, ease: 'power2.out', immediateRender: false }, CUES.flip.start + 0.9);
+      tl.to($('#digit-note'), { opacity: 1, duration: 0.6 }, CUES.flip.start + 1.8);
+
+      // ---- causal：蚂蚁→6 连线 green 点亮，验证印章盖章 ----
+      tl.add(setCaption('causal'), CUES.causal.start);
+      tl.to($('#lnk-main'), { opacity: 1, duration: 0.5 }, CUES.causal.start + 0.3);
+      tl.add(function () { $('#lnk-main').classList.add('green'); }, CUES.causal.start + 0.3);
+      tl.fromTo($('#stamp'), { opacity: 0, scale: 2.2 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.8)' }, CUES.causal.start + 1.2);
+      tl.to($('#output'), { scale: 1.04, duration: 0.3, yoyo: true, repeat: 1 }, CUES.causal.start + 1.9);
+
+      // ---- meaning：对比 pills stagger 淡入 ----
+      tl.add(setCaption('meaning'), CUES.meaning.start);
+      tl.to($$('.vp'), { opacity: 1, y: 0, duration: 0.55, stagger: 0.4, ease: 'back.out(1.6)' }, CUES.meaning.start + 0.4);
+
+      // ---- conclusion：summary overlay 淡入 ----
+      tl.add(setCaption('conclusion'), CUES.conclusion.start);
+      tl.to($('#summary'), { opacity: 1, duration: 0.9, ease: 'power1.out' }, CUES.conclusion.start + 0.4);
+      tl.to($$('.sum-pill'), { opacity: 1, y: 0, duration: 0.5, stagger: 0.18 }, CUES.conclusion.start + 1.1);
+
+      // ---- 尾端 anchor（BLOCKING） ----
+      tl.to($('#frame'), { opacity: 1, duration: 0.05, ease: 'none' }, AUDIO_DURATION - 0.05);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

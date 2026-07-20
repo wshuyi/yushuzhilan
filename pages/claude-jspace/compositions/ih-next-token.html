@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <!-- GSAP 和 Runtime 必须同步加载（pitfalls §1, §2） -->
+    <script src="../lib/gsap.min.js"></script>
+    <script src="../lib/hyperframe.runtime.iife.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1920px; height: 1080px; overflow: hidden;
+        background: #0a0a0a;
+        font-family: "Noto Sans SC", sans-serif;
+        color: #f5f5f7;
+      }
+      .bg-glow {
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(ellipse 900px 700px at 25% 40%, rgba(124,58,237,0.22), rgba(124,58,237,0) 60%),
+          radial-gradient(ellipse 800px 600px at 80% 70%, rgba(6,182,212,0.18), rgba(6,182,212,0) 60%);
+        pointer-events: none;
+      }
+      .frame { position: absolute; inset: 0; padding: 70px 100px; }
+      .ih-eyebrow {
+        font-size: 26px; letter-spacing: 0.35em; color: #06b6d4;
+        text-transform: uppercase; margin-bottom: 14px;
+      }
+      .ih-title {
+        font-size: 60px; font-weight: 700; line-height: 1.12;
+        color: #f5f5f7; letter-spacing: -0.02em;
+      }
+      .ih-sub { font-size: 26px; color: #94a3b8; margin-top: 12px; }
+
+      .stage { position: absolute; left: 100px; right: 100px; top: 250px; bottom: 150px; }
+
+      /* 句子条 */
+      #sentence {
+        position: absolute; left: 0; right: 0; top: 0; height: 120px;
+        border: 1px solid #1e293b; border-radius: 16px;
+        background: rgba(255,255,255,0.03);
+        display: flex; align-items: center; padding: 0 30px; gap: 14px;
+      }
+      .slot {
+        height: 76px; border: 1px dashed #334155; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 42px; font-weight: 700;
+      }
+      #slot-0 { width: 160px; }
+      #slot-1 { width: 80px; }
+      #slot-2 { width: 140px; }
+      #slot-3 { width: 80px; }
+      @keyframes nt-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.1; } }
+      #cursor {
+        width: 5px; height: 52px; background: #06b6d4; margin-left: 4px;
+        animation: nt-blink 1.05s infinite;
+      }
+
+      /* 牌堆 */
+      #deck { position: absolute; left: 40px; top: 150px; width: 116px; height: 66px; opacity: 0; }
+      #deck .dk {
+        position: absolute; width: 100px; height: 56px;
+        background: #111827; border: 1px solid #475569; border-radius: 10px;
+      }
+      #deck .dk-1 { left: 0; top: 10px; }
+      #deck .dk-2 { left: 8px; top: 5px; }
+      #deck .dk-3 { left: 16px; top: 0; }
+
+      /* 步数标签 / meaning 标签 */
+      #step-tag {
+        position: absolute; right: 410px; top: 150px;
+        font-size: 26px; color: #f59e0b; font-weight: 700; opacity: 0;
+      }
+      #rep-label {
+        position: absolute; left: 0; top: 152px;
+        font-size: 24px; color: #06b6d4; font-weight: 700; opacity: 0;
+      }
+
+      /* 概率榜面板 */
+      #board {
+        position: absolute; left: 50%; top: 190px; bottom: 0; width: 900px; margin-left: -450px;
+        background: rgba(255,255,255,0.03); border: 1px solid #1e293b;
+        border-radius: 16px; padding: 20px 26px; opacity: 0;
+      }
+      #board .board-t { font-size: 24px; font-weight: 700; color: #64748b; margin-bottom: 14px; }
+      .brow {
+        display: flex; align-items: center; gap: 16px; height: 64px;
+        border: 1px solid transparent; border-radius: 10px; padding: 0 12px; opacity: 0;
+      }
+      .brow.picked { border-color: #f59e0b; background: rgba(245,158,11,0.10); }
+      .bword { width: 130px; font-size: 30px; font-weight: 700; text-align: right; }
+      .btrack { flex: 1; height: 26px; background: #111827; border-radius: 6px; overflow: hidden; }
+      .bar { height: 100%; width: 0%; background: linear-gradient(90deg, #0e7490, #06b6d4); border-radius: 6px; }
+      .brow.picked .bar { background: linear-gradient(90deg, #b45309, #f59e0b); }
+      .bpct {
+        width: 80px; font-size: 26px; font-weight: 700; color: #cbd5e1;
+        text-align: right; font-variant-numeric: tabular-nums;
+      }
+
+      /* 飞行 token */
+      .ftoken {
+        position: absolute; z-index: 8;
+        background: #0f172a; border: 1px solid #334155; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 42px; font-weight: 700; color: #f5f5f7; opacity: 0;
+      }
+      #ft-canada { color: #06b6d4; }
+
+      /* 字幕条 */
+      .ih-caption {
+        position: absolute; left: 100px; right: 100px; bottom: 60px;
+        font-size: 34px; font-weight: 400; color: #cbd5e1;
+        text-align: center; letter-spacing: 0.02em; opacity: 0; z-index: 20;
+      }
+
+      /* 总结 overlay（底部留出字幕条） */
+      .summary-overlay {
+        position: absolute; left: 0; top: 0; right: 0; bottom: 130px;
+        background: rgba(10,10,10,0.55); backdrop-filter: blur(4px);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center; opacity: 0; z-index: 10;
+      }
+      .summary-overlay .sum-k { font-size: 20px; letter-spacing: 0.35em; color: #06b6d4; }
+      .summary-overlay .sum-t { font-size: 54px; font-weight: 800; margin-top: 14px; }
+      .summary-overlay .sum-n { font-size: 24px; color: #94a3b8; margin-top: 24px; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="53.028"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div class="bg-glow"></div>
+      <div class="frame" id="frame">
+        <div class="ih-eyebrow">Next Token</div>
+        <div class="ih-title">文字接龙：下一个词从概率榜里跳出</div>
+        <div class="ih-sub">大模型每蹦一个词之前，手里都攥着一张候选词概率榜。看这张榜，怎么一步一步把句子接出来。</div>
+
+        <div class="stage" id="stage">
+          <div id="sentence">
+            <div class="slot" id="slot-0"></div>
+            <div class="slot" id="slot-1"></div>
+            <div class="slot" id="slot-2"></div>
+            <div class="slot" id="slot-3"></div>
+            <div id="cursor"></div>
+          </div>
+
+          <div id="deck">
+            <div class="dk dk-1"></div>
+            <div class="dk dk-2"></div>
+            <div class="dk dk-3"></div>
+          </div>
+
+          <div id="step-tag">第 1 步</div>
+          <div id="rep-label">榜上每个词 = 可调用的表征</div>
+
+          <div id="board">
+            <div class="board-t">候选词概率榜</div>
+            <div class="brow" id="row-0">
+              <div class="bword">首都</div>
+              <div class="btrack"><div class="bar" id="bar-0"></div></div>
+              <div class="bpct" id="pct-0">0%</div>
+            </div>
+            <div class="brow" id="row-1">
+              <div class="bword">多伦多</div>
+              <div class="btrack"><div class="bar" id="bar-1"></div></div>
+              <div class="bpct" id="pct-1">0%</div>
+            </div>
+            <div class="brow" id="row-2">
+              <div class="bword">法语</div>
+              <div class="btrack"><div class="bar" id="bar-2"></div></div>
+              <div class="bpct" id="pct-2">0%</div>
+            </div>
+            <div class="brow" id="row-3">
+              <div class="bword">英语</div>
+              <div class="btrack"><div class="bar" id="bar-3"></div></div>
+              <div class="bpct" id="pct-3">0%</div>
+            </div>
+            <div class="brow" id="row-4">
+              <div class="bword">政府</div>
+              <div class="btrack"><div class="bar" id="bar-4"></div></div>
+              <div class="bpct" id="pct-4">0%</div>
+            </div>
+            <div class="brow" id="row-5">
+              <div class="bword">贸易</div>
+              <div class="btrack"><div class="bar" id="bar-5"></div></div>
+              <div class="bpct" id="pct-5">0%</div>
+            </div>
+          </div>
+
+          <div class="ftoken" id="ft-canada">加拿大</div>
+          <div class="ftoken" id="ft-de">的</div>
+          <div class="ftoken" id="ft-capital">首都</div>
+          <div class="ftoken" id="ft-shi">是</div>
+        </div>
+
+        <div class="summary-overlay" id="summary">
+          <div class="sum-k">NEXT TOKEN</div>
+          <div class="sum-t">每步一张概率榜，接出整句话</div>
+          <div class="sum-n">候选词，就是可调用的内部表征</div>
+        </div>
+
+        <div class="ih-caption" id="caption"></div>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const scope = document.getElementById('root');
+
+      const AUDIO_DURATION = 53.028;
+      const CUES = {
+        intro:      { start:  0.000, end:  5.184 },
+        metaphor:   { start:  5.364, end: 12.384 },
+        scene:      { start: 12.564, end: 15.876 },
+        board:      { start: 16.056, end: 27.900 },
+        pick1:      { start: 28.080, end: 32.616 },
+        rerank:     { start: 32.796, end: 40.392 },
+        meaning:    { start: 40.572, end: 46.584 },
+        conclusion: { start: 46.764, end: 52.776 }
+      };
+
+      /* 数字一致性：百分比、条宽、count-up 全部从这一个常量派生 */
+      const BOARDS = [
+        [['首都', 42], ['多伦多', 18], ['法语', 9], ['英语', 7], ['政府', 5], ['贸易', 3]],
+        [['是', 51], ['有', 12], ['位于', 10], ['人口', 6], ['面积', 4], ['城市', 3]]
+      ];
+
+      const stage = scope.querySelector('#stage');
+      const capEl = scope.querySelector('#caption');
+      function setCaption(text) {
+        return function () {
+          capEl.textContent = text;
+          gsap.fromTo(capEl, { opacity: 0 }, { opacity: 1, duration: 0.45, ease: 'power1.out' });
+        };
+      }
+
+      const sentence = scope.querySelector('#sentence');
+      const deck = scope.querySelector('#deck');
+      const stepTag = scope.querySelector('#step-tag');
+      const repLabel = scope.querySelector('#rep-label');
+      const board = scope.querySelector('#board');
+      const boardTitle = scope.querySelector('#board .board-t');
+      const rows = [0, 1, 2, 3, 4, 5].map(function (i) { return scope.querySelector('#row-' + i); });
+      const words = rows.map(function (r) { return r.querySelector('.bword'); });
+      const bars = [0, 1, 2, 3, 4, 5].map(function (i) { return scope.querySelector('#bar-' + i); });
+      const pcts = [0, 1, 2, 3, 4, 5].map(function (i) { return scope.querySelector('#pct-' + i); });
+      const ftCanada = scope.querySelector('#ft-canada');
+      const ftDe = scope.querySelector('#ft-de');
+      const ftCapital = scope.querySelector('#ft-capital');
+      const ftShi = scope.querySelector('#ft-shi');
+      const summary = scope.querySelector('#summary');
+
+      /* ---- 元素相对 stage 的 rect（在任何 fromTo 应用之前测量） ---- */
+      function rectOf(el) {
+        const sr = stage.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        return { x: r.left - sr.left, y: r.top - sr.top, w: r.width, h: r.height };
+      }
+      const slotRects = [0, 1, 2, 3].map(function (i) { return rectOf(scope.querySelector('#slot-' + i)); });
+      const deckRect = rectOf(deck);
+      const row0wordRect = rectOf(rows[0].querySelector('.bword'));
+
+      /* 初始词（与 BOARDS[0] 同一来源） */
+      words.forEach(function (w, i) { w.textContent = BOARDS[0][i][0]; });
+
+      function countTween(el, from, to, at, dur) {
+        const obj = { v: from };
+        tl.to(obj, {
+          v: to, duration: dur, ease: 'power1.out',
+          onUpdate: function () { el.textContent = Math.round(obj.v) + '%'; }
+        }, at);
+      }
+
+      /* ================= beats ================= */
+
+      /* intro：句子条出现，光标闪烁 */
+      tl.add(setCaption('要理解这个“空间”，先得知道：大模型说话，不是一口气写完的。'), CUES.intro.start);
+      tl.fromTo(sentence, { opacity: 0, y: -24 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' },
+        CUES.intro.start + 0.2);
+
+      /* metaphor：概率榜从下方升起，标题亮起 */
+      tl.add(setCaption('它更像文字接龙——每蹦出一个词之前，手里都攥着一张候选词概率榜。'), CUES.metaphor.start);
+      tl.fromTo(board, { y: 460, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' },
+        CUES.metaphor.start + 0.3);
+      tl.to(boardTitle, { color: '#f5f5f7', duration: 0.5 }, CUES.metaphor.start + 1.2);
+      tl.to(stepTag, { opacity: 1, duration: 0.4 }, CUES.metaphor.start + 0.6);
+      tl.to(deck, { opacity: 1, duration: 0.4 }, CUES.metaphor.start + 0.8);
+
+      /* scene：“加拿大”从牌堆飞入句子条 */
+      tl.add(setCaption('比如，上文刚写到“加拿大”三个字。'), CUES.scene.start);
+      tl.add(function () {
+        gsap.set(ftCanada, {
+          left: deckRect.x, top: deckRect.y,
+          width: slotRects[0].w, height: slotRects[0].h,
+          scale: 0.6, opacity: 1
+        });
+      }, CUES.scene.start + 0.2);
+      tl.to(ftCanada, { left: slotRects[0].x, top: slotRects[0].y, scale: 1, duration: 0.7, ease: 'power2.inOut' },
+        CUES.scene.start + 0.25);
+      tl.to(deck, { opacity: 0, duration: 0.4 }, CUES.scene.start + 1.1);
+
+      /* board：6 行 stagger 淡入，条从 0 长、数字 count-up */
+      tl.add(setCaption('此刻模型内部的榜单上，排着：首都、多伦多、法语、英语、政府、贸易……每个候选词，都带着一个概率。'), CUES.board.start);
+      rows.forEach(function (row, i) {
+        const at = CUES.board.start + 0.4 + i * 0.45;
+        tl.to(row, { opacity: 1, duration: 0.35 }, at);
+        tl.to(bars[i], { width: BOARDS[0][i][1] + '%', duration: 1.1, ease: 'power2.out' }, at + 0.15);
+        countTween(pcts[i], 0, BOARDS[0][i][1], at + 0.15, 1.1);
+      });
+
+      /* pick1：“首都”高亮，「的」「首都」先后落位（间隔 0.4s），其余行变暗 */
+      tl.add(setCaption('概率最高的“首都”被选中，接到句子的末尾。'), CUES.pick1.start);
+      tl.add(function () { rows[0].classList.add('picked'); }, CUES.pick1.start + 0.2);
+      tl.to(rows[0], { scale: 1.03, duration: 0.25, yoyo: true, repeat: 1 }, CUES.pick1.start + 0.2);
+      tl.to(rows.slice(1), { opacity: 0.3, duration: 0.4 }, CUES.pick1.start + 0.3);
+      tl.add(function () {
+        gsap.set(ftDe, {
+          left: slotRects[1].x, top: slotRects[1].y - 80,
+          width: slotRects[1].w, height: slotRects[1].h, opacity: 0
+        });
+      }, CUES.pick1.start + 0.7);
+      tl.to(ftDe, { top: slotRects[1].y, opacity: 1, duration: 0.4, ease: 'power2.out' }, CUES.pick1.start + 0.75);
+      tl.add(function () {
+        gsap.set(ftCapital, {
+          left: row0wordRect.x, top: row0wordRect.y,
+          width: slotRects[2].w, height: slotRects[2].h, opacity: 1
+        });
+      }, CUES.pick1.start + 1.15);
+      tl.to(ftCapital, { left: slotRects[2].x, top: slotRects[2].y, duration: 0.65, ease: 'power2.inOut' },
+        CUES.pick1.start + 1.2);
+
+      /* rerank：第 2 步，榜单重排，“是”飞出接到句尾 */
+      tl.add(setCaption('然后，模型拿着“加拿大的首都”这句新上文，重新算一张榜——这回“是”排到了最前面。'), CUES.rerank.start);
+      tl.to(stepTag, { rotationX: 90, duration: 0.25, transformPerspective: 400 }, CUES.rerank.start + 0.2);
+      tl.add(function () { stepTag.textContent = '第 2 步'; }, CUES.rerank.start + 0.46);
+      tl.to(stepTag, { rotationX: 0, duration: 0.25 }, CUES.rerank.start + 0.48);
+      tl.add(function () { rows[0].classList.remove('picked'); }, CUES.rerank.start + 0.6);
+      tl.to(rows, { opacity: 0.25, x: 26, duration: 0.35, stagger: 0.06 }, CUES.rerank.start + 0.7);
+      tl.add(function () {
+        words.forEach(function (w, i) { w.textContent = BOARDS[1][i][0]; });
+      }, CUES.rerank.start + 1.35);
+      tl.to(rows, { opacity: 1, x: 0, duration: 0.4, stagger: 0.06 }, CUES.rerank.start + 1.45);
+      rows.forEach(function (row, i) {
+        tl.to(bars[i], { width: BOARDS[1][i][1] + '%', duration: 0.9, ease: 'power2.out' },
+          CUES.rerank.start + 1.5 + i * 0.05);
+        countTween(pcts[i], BOARDS[0][i][1], BOARDS[1][i][1], CUES.rerank.start + 1.5 + i * 0.05, 0.9);
+      });
+      tl.add(function () { rows[0].classList.add('picked'); }, CUES.rerank.start + 3.0);
+      tl.to(rows[0], { scale: 1.03, duration: 0.25, yoyo: true, repeat: 1 }, CUES.rerank.start + 3.0);
+      tl.to(rows.slice(1), { opacity: 0.3, duration: 0.4 }, CUES.rerank.start + 3.1);
+      tl.add(function () {
+        gsap.set(ftShi, {
+          left: row0wordRect.x, top: row0wordRect.y,
+          width: slotRects[3].w, height: slotRects[3].h, opacity: 1
+        });
+      }, CUES.rerank.start + 3.6);
+      tl.to(ftShi, { left: slotRects[3].x, top: slotRects[3].y, duration: 0.65, ease: 'power2.inOut' },
+        CUES.rerank.start + 3.65);
+
+      /* meaning：榜单 cyan 发光，候选词依次闪 */
+      tl.add(setCaption('注意：榜单上的每一个候选词，都是模型此刻可以调用的内部表征。'), CUES.meaning.start);
+      tl.to(rows, { opacity: 1, duration: 0.4 }, CUES.meaning.start + 0.3);
+      tl.to(board, {
+        borderColor: '#06b6d4',
+        boxShadow: '0 0 0 2px rgba(6,182,212,0.9), 0 0 42px rgba(6,182,212,0.35)',
+        duration: 0.6
+      }, CUES.meaning.start + 0.2);
+      tl.fromTo(repLabel, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5 }, CUES.meaning.start + 0.5);
+      words.forEach(function (w, i) {
+        tl.fromTo(w, { color: '#f5f5f7' }, { color: '#06b6d4', duration: 0.22, yoyo: true, repeat: 1 },
+          CUES.meaning.start + 1.2 + i * 0.1);
+      });
+
+      /* conclusion：summary overlay */
+      tl.add(setCaption('这张每步都在更新的概率榜，就是理解“意识空间”的第一块基石。'), CUES.conclusion.start);
+      tl.to(summary, { opacity: 1, duration: 0.8 }, CUES.conclusion.start + 0.3);
+
+      /* 尾端 anchor（BLOCKING） */
+      tl.to('#frame', { opacity: 1, duration: 0.05, ease: 'none' }, AUDIO_DURATION - 0.05);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

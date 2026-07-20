@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <!-- GSAP 和 Runtime 必须同步加载（pitfalls §1, §2） -->
+    <script src="../lib/gsap.min.js"></script>
+    <script src="../lib/hyperframe.runtime.iife.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1920px; height: 1080px; overflow: hidden;
+        background: #0a0a0a;
+        font-family: "Noto Sans SC", sans-serif;
+        color: #f5f5f7;
+      }
+      .bg-glow {
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(ellipse 900px 700px at 25% 40%, rgba(124,58,237,0.22), rgba(124,58,237,0) 60%),
+          radial-gradient(ellipse 800px 600px at 80% 70%, rgba(6,182,212,0.18), rgba(6,182,212,0) 60%);
+        pointer-events: none;
+      }
+      .frame { position: absolute; inset: 0; padding: 70px 100px; }
+      .ih-eyebrow {
+        font-size: 26px; letter-spacing: 0.35em; color: #06b6d4;
+        text-transform: uppercase; margin-bottom: 14px; opacity: 0;
+      }
+      .ih-title {
+        font-size: 64px; font-weight: 700; line-height: 1.1;
+        color: #f5f5f7; letter-spacing: -0.02em; opacity: 0;
+      }
+      .ih-sub { font-size: 26px; color: #94a3b8; margin-top: 14px; opacity: 0; }
+
+      #stage { position: absolute; left: 100px; right: 100px; top: 270px; bottom: 160px; }
+      #edges { position: absolute; left: 0; top: 0; width: 1720px; height: 650px; overflow: visible; }
+      #edges path { fill: none; stroke: #f59e0b; stroke-width: 4; stroke-linecap: round; }
+
+      .token {
+        position: absolute; top: 30px; width: 140px; height: 72px;
+        border: 2px solid #334155; background: #111827; border-radius: 14px;
+        font-size: 36px; font-weight: 600; color: #f5f5f7;
+        display: flex; align-items: center; justify-content: center; opacity: 0;
+      }
+      #stream {
+        position: absolute; left: 1055px; top: 180px; width: 90px; height: 340px;
+        background: linear-gradient(180deg, rgba(6,182,212,0.06), rgba(6,182,212,0.22), rgba(6,182,212,0.06));
+        border: 1px solid rgba(6,182,212,0.55); border-radius: 18px; opacity: 0;
+      }
+      #dir-arrow { position: absolute; left: 0; top: 0; width: 90px; height: 340px; }
+      #dir-label {
+        position: absolute; left: 1168px; top: 322px; font-size: 26px;
+        color: #94a3b8; opacity: 0; white-space: nowrap;
+      }
+      #current {
+        position: absolute; left: 940px; top: 545px; width: 320px; height: 80px;
+        border: 3px solid #7c3aed; border-radius: 18px; background: rgba(124,58,237,0.10);
+        font-size: 36px; color: #f5f5f7;
+        display: flex; align-items: center; justify-content: center; opacity: 0;
+      }
+      #badge-porter {
+        position: absolute; left: 1180px; top: 522px;
+        background: #f59e0b; color: #111827; font-size: 24px; font-weight: 700;
+        padding: 6px 16px; border-radius: 999px; opacity: 0;
+      }
+      .w-badge {
+        position: absolute; font-size: 30px; font-weight: 700; color: #f59e0b;
+        background: rgba(245,158,11,0.12); border: 2px solid #f59e0b;
+        padding: 6px 16px; border-radius: 999px; opacity: 0;
+      }
+      #w-zw { left: 724px; top: 287px; }
+      #w-dw { left: 938px; top: 272px; }
+      .pkt {
+        position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 50%;
+        background: radial-gradient(circle, #a5f3fc 0%, #06b6d4 60%);
+        box-shadow: 0 0 26px rgba(6,182,212,0.95); opacity: 0;
+      }
+      #pulse-ring {
+        position: absolute; left: 1100px; top: 585px; width: 60px; height: 60px;
+        border: 4px solid #06b6d4; border-radius: 50%; opacity: 0;
+      }
+
+      .ih-caption {
+        position: absolute; left: 100px; right: 100px; bottom: 60px;
+        font-size: 34px; color: #cbd5e1; text-align: center; opacity: 0; z-index: 20;
+      }
+      .summary-overlay {
+        position: absolute; inset: 0; background: rgba(10,10,10,0.55);
+        backdrop-filter: blur(4px);
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        text-align: center; opacity: 0; z-index: 10;
+      }
+      .sum-title { font-size: 56px; font-weight: 700; color: #f5f5f7; }
+      .sum-note { font-size: 30px; color: #94a3b8; margin-top: 18px; }
+      .sum-pills { display: flex; gap: 28px; margin-top: 48px; }
+      .pill {
+        border: 1px solid #334155; background: rgba(15,23,42,0.85); border-radius: 16px;
+        padding: 20px 28px; font-size: 26px; color: #cbd5e1; opacity: 0;
+      }
+      .pill b { color: #06b6d4; margin-right: 12px; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="55.116"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div class="frame" id="frame">
+        <div class="bg-glow"></div>
+        <div class="ih-eyebrow">ATTENTION · 自注意力</div>
+        <div class="ih-title">自注意力：把前文的信息搬回来</div>
+        <div class="ih-sub">Attention 是搬运工：判断前文哪些词和当前预测最相关，把它们的信息抓回来，微调下一个词的方向。</div>
+
+        <div id="stage">
+          <svg id="edges" viewBox="0 0 1720 650">
+            <path id="edge-zw" d="M 520 102 C 520 300, 1000 320, 1075 525" />
+            <path id="edge-dw" d="M 860 102 C 860 280, 1100 300, 1125 525" />
+          </svg>
+
+          <div class="token" id="tok-0" style="left:280px">会</div>
+          <div class="token" id="tok-1" style="left:450px">织网</div>
+          <div class="token" id="tok-2" style="left:620px">的</div>
+          <div class="token" id="tok-3" style="left:790px">动物</div>
+          <div class="token" id="tok-4" style="left:960px">有</div>
+          <div class="token" id="tok-5" style="left:1130px">几条</div>
+          <div class="token" id="tok-6" style="left:1300px">腿</div>
+
+          <div id="stream">
+            <div id="dir-arrow">
+              <svg width="90" height="340" viewBox="0 0 90 340">
+                <line x1="45" y1="300" x2="45" y2="58" stroke="#06b6d4" stroke-width="7" stroke-linecap="round" />
+                <polygon points="45,22 27,62 63,62" fill="#06b6d4" />
+              </svg>
+            </div>
+          </div>
+          <div id="dir-label">预测方向微调</div>
+          <div id="current">下一个词 = ？</div>
+          <div id="badge-porter">搬运工</div>
+
+          <div class="w-badge" id="w-zw">0.61</div>
+          <div class="w-badge" id="w-dw">0.27</div>
+
+          <div class="pkt" id="pkt-zw"></div>
+          <div class="pkt" id="pkt-dw"></div>
+          <div id="pulse-ring"></div>
+        </div>
+
+        <div class="ih-caption"></div>
+
+        <div class="summary-overlay" id="summary">
+          <div class="sum-title">每算一个词，搬运就发生一次</div>
+          <div class="sum-note">而且每一层，都在同时发生</div>
+          <div class="sum-pills">
+            <div class="pill"><b>查询</b>当前位置先问：谁和我最相关？</div>
+            <div class="pill"><b>搬运</b>命中词的信息打包，搬回当前位置</div>
+            <div class="pill"><b>微调</b>汇入信息流，修正下一个词的预测方向</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const scope = document.getElementById('root');
+
+      const AUDIO_DURATION = 55.116;
+      const CUES = {
+        intro:      { start: 0.0,    end: 7.92  },
+        metaphor:   { start: 8.1,    end: 13.392 },
+        scene:      { start: 13.572, end: 19.98 },
+        query:      { start: 20.16,  end: 28.008 },
+        match:      { start: 28.188, end: 33.012 },
+        transport:  { start: 33.192, end: 38.484 },
+        merge:      { start: 38.664, end: 46.476 },
+        conclusion: { start: 46.656, end: 54.864 }
+      };
+
+      const CAPS = {
+        intro:      "那模型每算一个词，内部在干什么？靠的是两个动作。第一个，叫自注意力，Attention。",
+        metaphor:   "它的角色是搬运工：把前文看到过的信息，搬回当前位置。",
+        scene:      "比如问题是：会织网的动物，有几条腿？模型正要预测下一个词。",
+        query:      "当前位置先发出一个查询：前面哪些词，和我现在要预测的内容最相关？",
+        match:      "“织网”和“动物”被匹配上了——它们和“腿”的关系最密切。",
+        transport:  "于是，这两个词的信息被打包，沿着连接，搬回当前位置。",
+        merge:      "搬回来的信息汇入当前的信息流，给下一个词的预测，做一次方向上的微调。",
+        conclusion: "每算一个词，这样的搬运就发生一次。而且，在模型的每一层里，都在发生。"
+      };
+
+      const q = function (s) { return scope.querySelector(s); };
+      const qa = function (s) { return scope.querySelectorAll(s); };
+
+      const eyebrow = q('.ih-eyebrow'), title = q('.ih-title'), sub = q('.ih-sub');
+      const capEl = q('.ih-caption');
+      const stream = q('#stream'), dirArrow = q('#dir-arrow'), dirLabel = q('#dir-label');
+      const current = q('#current'), badgePorter = q('#badge-porter');
+      const edgeZw = q('#edge-zw'), edgeDw = q('#edge-dw');
+      const wZw = q('#w-zw'), wDw = q('#w-dw');
+      const pktZw = q('#pkt-zw'), pktDw = q('#pkt-dw');
+      const pulse = q('#pulse-ring');
+      const tokZw = q('#tok-1'), tokDw = q('#tok-3');
+      const summary = q('#summary'), pills = qa('.pill');
+
+      function setCaption(id) { capEl.textContent = CAPS[id]; }
+
+      // 弧线初始不可见：strokeDashoffset trick（仅用 GSAP core）
+      [edgeZw, edgeDw].forEach(function (p) {
+        const L = p.getTotalLength();
+        p.style.strokeDasharray = L;
+        p.style.strokeDashoffset = L;
+      });
+
+      // 小球飞行轨迹（与 SVG path 同一组贝塞尔控制点）
+      const ZW = { p0: { x: 520, y: 102 }, p1: { x: 520, y: 300 }, p2: { x: 1000, y: 320 }, p3: { x: 1075, y: 525 } };
+      const DW = { p0: { x: 860, y: 102 }, p1: { x: 860, y: 280 }, p2: { x: 1100, y: 300 }, p3: { x: 1125, y: 525 } };
+      function bez(B, t) {
+        const u = 1 - t;
+        return {
+          x: u*u*u*B.p0.x + 3*u*u*t*B.p1.x + 3*u*t*t*B.p2.x + t*t*t*B.p3.x,
+          y: u*u*u*B.p0.y + 3*u*u*t*B.p1.y + 3*u*t*t*B.p2.y + t*t*t*B.p3.y
+        };
+      }
+
+      gsap.set(dirArrow, { rotation: 0, transformOrigin: '50% 50%' });
+      gsap.set(pktZw, { xPercent: -50, yPercent: -50, x: ZW.p0.x, y: ZW.p0.y });
+      gsap.set(pktDw, { xPercent: -50, yPercent: -50, x: DW.p0.x, y: DW.p0.y });
+      gsap.set(pulse, { xPercent: -50, yPercent: -50, scale: 0.25 });
+
+      // 字幕条：每个 cue 开始切换为与该 cue 逐字相同的文本并淡入
+      ['intro','metaphor','scene','query','match','transport','merge','conclusion'].forEach(function (id) {
+        const t = CUES[id].start;
+        tl.to(capEl, { opacity: 0, duration: 0.22 }, Math.max(0, t - 0.26));
+        tl.add(function () { setCaption(id); }, t);
+        tl.to(capEl, { opacity: 1, duration: 0.35 }, t + 0.04);
+      });
+
+      // intro：标题区淡入
+      tl.fromTo(eyebrow, { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, CUES.intro.start + 0.2);
+      tl.fromTo(title,   { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }, CUES.intro.start + 0.5);
+      tl.fromTo(sub,     { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }, CUES.intro.start + 0.9);
+
+      // metaphor：当前位置槽出现 + 搬运工徽章别上
+      tl.fromTo(current, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.6)' }, CUES.metaphor.start + 0.2);
+      tl.fromTo(stream, { opacity: 0 }, { opacity: 1, duration: 0.8, ease: 'power1.out' }, CUES.metaphor.start + 0.4);
+      tl.fromTo(badgePorter, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2.2)' }, CUES.metaphor.start + 1.2);
+
+      // scene：7 个 token stagger 落入顶行
+      tl.fromTo(qa('.token'), { opacity: 0, y: -46 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.22, ease: 'power2.out' }, CUES.scene.start + 0.2);
+
+      // query：当前位置发出扩散圆环脉冲（两次）
+      tl.fromTo(pulse, { opacity: 0.9, scale: 0.25 }, { opacity: 0, scale: 20, duration: 2.6, ease: 'power1.out' }, CUES.query.start + 0.4);
+      tl.fromTo(pulse, { opacity: 0.9, scale: 0.25 }, { opacity: 0, scale: 20, duration: 2.6, ease: 'power1.out' }, CUES.query.start + 3.6);
+
+      // match：织网/动物 amber 高亮 + 弧线画出 + 权重徽章弹出
+      tl.to(tokZw, { scale: 1.08, backgroundColor: 'rgba(245,158,11,0.22)', borderColor: '#f59e0b', color: '#f59e0b', duration: 0.45, ease: 'back.out(2)' }, CUES.match.start + 0.1);
+      tl.to(tokDw, { scale: 1.08, backgroundColor: 'rgba(245,158,11,0.22)', borderColor: '#f59e0b', color: '#f59e0b', duration: 0.45, ease: 'back.out(2)' }, CUES.match.start + 0.25);
+      tl.to(edgeZw, { strokeDashoffset: 0, duration: 1.3, ease: 'power2.inOut' }, CUES.match.start + 0.5);
+      tl.to(edgeDw, { strokeDashoffset: 0, duration: 1.3, ease: 'power2.inOut' }, CUES.match.start + 0.7);
+      tl.fromTo(wZw, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2.4)' }, CUES.match.start + 1.8);
+      tl.fromTo(wDw, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2.4)' }, CUES.match.start + 2.0);
+
+      // transport：两个发光小球沿各自弧线飞回流带，弧线发光
+      const progZw = { t: 0 }, progDw = { t: 0 };
+      tl.to(pktZw, { opacity: 1, duration: 0.2 }, CUES.transport.start + 0.15);
+      tl.to(progZw, { t: 1, duration: 3.5, ease: 'power1.inOut', onUpdate: function () {
+        const pt = bez(ZW, progZw.t); gsap.set(pktZw, { x: pt.x, y: pt.y });
+      } }, CUES.transport.start + 0.2);
+      tl.to(pktDw, { opacity: 1, duration: 0.2 }, CUES.transport.start + 0.65);
+      tl.to(progDw, { t: 1, duration: 3.5, ease: 'power1.inOut', onUpdate: function () {
+        const pt = bez(DW, progDw.t); gsap.set(pktDw, { x: pt.x, y: pt.y });
+      } }, CUES.transport.start + 0.7);
+      tl.to([edgeZw, edgeDw], { strokeWidth: 7, duration: 0.6, ease: 'power1.out' }, CUES.transport.start + 0.3);
+
+      // merge：小球汇入竖带，竖带 cyan 闪一下，预测方向箭头偏转
+      tl.to([pktZw, pktDw], { opacity: 0, scale: 0.4, duration: 0.4 }, CUES.merge.start + 0.1);
+      tl.fromTo(stream, { boxShadow: '0 0 0px rgba(6,182,212,0)' }, { boxShadow: '0 0 60px rgba(6,182,212,0.9)', duration: 0.5, yoyo: true, repeat: 1, ease: 'power1.inOut' }, CUES.merge.start + 0.2);
+      tl.to(dirArrow, { rotation: -18, duration: 1.4, ease: 'power2.inOut' }, CUES.merge.start + 0.8);
+      tl.fromTo(dirLabel, { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.6, ease: 'power2.out' }, CUES.merge.start + 2.0);
+
+      // conclusion：summary overlay 揭示 + pills stagger
+      tl.to(summary, { opacity: 1, duration: 0.6, ease: 'power1.out' }, CUES.conclusion.start);
+      tl.fromTo(pills, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.25, ease: 'power2.out' }, CUES.conclusion.start + 0.5);
+
+      // 尾端 anchor（BLOCKING）
+      tl.to('#frame', { opacity: 1, duration: 0.05, ease: 'none' }, AUDIO_DURATION - 0.05);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

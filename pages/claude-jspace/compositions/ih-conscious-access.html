@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <!-- GSAP 和 Runtime 必须同步加载（pitfalls §1, §2） -->
+    <script src="../lib/gsap.min.js"></script>
+    <script src="../lib/hyperframe.runtime.iife.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1920px; height: 1080px; overflow: hidden;
+        background: #0a0a0a;
+        font-family: "Noto Sans SC", sans-serif;
+        color: #f5f5f7;
+      }
+      .bg-glow {
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(ellipse 900px 700px at 25% 40%, rgba(124,58,237,0.22), rgba(124,58,237,0) 60%),
+          radial-gradient(ellipse 800px 600px at 80% 70%, rgba(6,182,212,0.18), rgba(6,182,212,0) 60%);
+        pointer-events: none;
+      }
+      .frame { position: absolute; inset: 0; padding: 70px 100px; }
+      .ih-eyebrow {
+        font-size: 26px; letter-spacing: 0.35em; color: #06b6d4;
+        text-transform: uppercase; margin-bottom: 14px;
+      }
+      .ih-title {
+        font-size: 60px; font-weight: 700; line-height: 1.12;
+        color: #f5f5f7; letter-spacing: -0.02em;
+      }
+      .ih-sub { font-size: 26px; color: #94a3b8; margin-top: 12px; }
+
+      .stage { position: absolute; left: 100px; right: 100px; top: 250px; bottom: 150px; }
+
+      /* 媒体卡片（左上） */
+      #media-cards { position: absolute; left: 0; top: 0; width: 360px; height: 220px; }
+      .mcard {
+        position: absolute; width: 320px; padding: 18px 22px;
+        background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.5);
+        border-radius: 14px;
+      }
+      .mcard .mt { font-size: 26px; font-weight: 700; color: #ef4444; }
+      .mcard .ms { font-size: 15px; color: #94a3b8; margin-top: 6px; }
+      #mcard-1 { left: 0; top: 0; }
+      #mcard-2 { left: 16px; top: 96px; }
+      #stamp {
+        position: absolute; right: -6px; top: 34px;
+        padding: 8px 18px; border: 4px solid #ef4444; border-radius: 10px;
+        color: #ef4444; font-size: 34px; font-weight: 800; letter-spacing: 0.2em;
+        background: rgba(10,10,10,0.65); opacity: 0;
+      }
+
+      /* 论文卡片（中上，白底感） */
+      #paper-title {
+        position: absolute; left: 150px; top: 0; width: 560px;
+        background: #f5f5f7; color: #111827; border-radius: 14px; padding: 20px 26px;
+      }
+      #paper-title .pt-k { font-size: 14px; letter-spacing: 0.25em; color: #6b7280; }
+      #paper-title .pt-t { font-size: 26px; font-weight: 700; margin-top: 4px; }
+      #paper-title .pt-s { font-size: 15px; color: #4b5563; margin-top: 4px; }
+
+      /* 中央大词 */
+      #term {
+        position: absolute; left: 0; right: 0; top: 180px; z-index: 6;
+        display: flex; justify-content: center; align-items: baseline; gap: 28px;
+      }
+      #term-con, #term-acc { font-size: 96px; font-weight: 800; letter-spacing: -0.02em; }
+      #magnifier {
+        position: absolute; left: 380px; top: 172px; width: 150px; height: 150px;
+        border: 5px solid #06b6d4; border-radius: 50%;
+        box-shadow: 0 0 30px rgba(6,182,212,0.4); opacity: 0; z-index: 7;
+      }
+
+      /* 媒体热词 chips（右侧） */
+      #hype-chips {
+        position: absolute; right: 0; top: 160px;
+        display: flex; flex-direction: column; gap: 18px; align-items: flex-end;
+      }
+      .hype-chip {
+        padding: 14px 30px; border: 2px solid #ef4444; border-radius: 999px;
+        color: #ef4444; font-size: 28px; font-weight: 700;
+        background: rgba(239,68,68,0.08); opacity: 0;
+      }
+
+      /* 锚点卡 */
+      .anchor-card {
+        position: absolute; bottom: 0; width: 520px; height: 280px;
+        background: rgba(255,255,255,0.04); border: 1px solid #1e293b;
+        border-radius: 16px; padding: 18px 20px; opacity: 0;
+      }
+      #anchor-con { left: 0; }
+      #anchor-acc { right: 0; }
+      .anchor-card .ac-k { font-size: 18px; color: #94a3b8; letter-spacing: 0.25em; }
+      .anchor-card .ac-t { font-size: 28px; font-weight: 700; margin: 2px 0 10px; }
+      .anchor-card .ac-t .cyan { color: #06b6d4; }
+
+      /* access 小图 */
+      #acc-flow { position: relative; height: 176px; }
+      #acc-block {
+        position: absolute; left: 20px; top: 62px; width: 44px; height: 44px;
+        background: #06b6d4; border-radius: 8px;
+      }
+      #acc-arrow {
+        position: absolute; left: 110px; top: 48px;
+        font-size: 48px; color: #64748b;
+      }
+      #acc-box {
+        position: absolute; right: 20px; top: 40px; width: 170px; height: 90px;
+        border: 2px solid #64748b; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px; color: #cbd5e1;
+      }
+      #acc-read {
+        position: absolute; right: 20px; top: 142px;
+        font-size: 16px; color: #22c55e; opacity: 0;
+      }
+
+      /* 连线层 */
+      #links-svg { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+
+      /* 重组 pill */
+      #recombined-wrap {
+        position: absolute; left: 0; right: 0; top: 392px;
+        display: flex; justify-content: center;
+      }
+      #recombined {
+        padding: 22px 52px; border: 2px solid #06b6d4; border-radius: 999px;
+        background: rgba(6,182,212,0.10); font-size: 46px; font-weight: 800;
+        color: #06b6d4; opacity: 0; white-space: nowrap;
+      }
+
+      /* 历史卡（左下角） */
+      #history-card {
+        position: absolute; left: 0; bottom: 0; width: 540px;
+        background: rgba(255,255,255,0.04); border: 1px solid #1e293b;
+        border-radius: 16px; padding: 20px 24px; opacity: 0;
+      }
+      #history-card .hc-t { font-size: 24px; font-weight: 700; }
+      #history-card .hc-t .cyan { color: #06b6d4; }
+      #history-card .hc-s { font-size: 16px; color: #94a3b8; margin-top: 8px; }
+      #history-tag {
+        margin-top: 12px; display: inline-block; padding: 8px 16px;
+        border: 1px solid #06b6d4; border-radius: 999px;
+        color: #06b6d4; font-size: 18px; opacity: 0;
+      }
+
+      /* 字幕条 */
+      .ih-caption {
+        position: absolute; left: 100px; right: 100px; bottom: 60px;
+        font-size: 34px; font-weight: 400; color: #cbd5e1;
+        text-align: center; letter-spacing: 0.02em; opacity: 0; z-index: 20;
+      }
+
+      /* 总结 overlay（底部留出字幕条） */
+      .summary-overlay {
+        position: absolute; left: 0; top: 0; right: 0; bottom: 130px;
+        background: rgba(10,10,10,0.55); backdrop-filter: blur(4px);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center; opacity: 0; z-index: 10;
+      }
+      .summary-overlay .sum-k { font-size: 20px; letter-spacing: 0.35em; color: #06b6d4; }
+      .summary-overlay .sum-t { font-size: 54px; font-weight: 800; margin-top: 14px; }
+      .summary-overlay .sum-pills { display: flex; gap: 24px; margin-top: 30px; }
+      .summary-overlay .sum-pill {
+        padding: 16px 34px; border: 1px solid #06b6d4; border-radius: 999px;
+        font-size: 28px; color: #cbd5e1; opacity: 0;
+      }
+      .summary-overlay .sum-n { font-size: 24px; color: #94a3b8; margin-top: 26px; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="70.812"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div class="bg-glow"></div>
+      <div class="frame" id="frame">
+        <div class="ih-eyebrow">Conscious Access</div>
+        <div class="ih-title">“意识”？其实是“可调用的数学表征”</div>
+        <div class="ih-sub">媒体说 Claude 长出了意识。但论文原词 conscious access——一个词译错，整个新闻就变了味。</div>
+
+        <div class="stage" id="stage">
+          <div id="media-cards">
+            <div class="mcard" id="mcard-1">
+              <div class="mt">Claude 长出意识！</div>
+              <div class="ms">朋友圈疯传 · 阅读 10w+</div>
+            </div>
+            <div class="mcard" id="mcard-2">
+              <div class="mt">AI 有了内心独白</div>
+              <div class="ms">热搜第 3 位</div>
+            </div>
+            <div id="stamp">疯传</div>
+          </div>
+
+          <div id="paper-title">
+            <div class="pt-k">ANTHROPIC · 论文</div>
+            <div class="pt-t">《语言模型中的全局工作空间》</div>
+            <div class="pt-s">Global Workspace in Language Models</div>
+          </div>
+
+          <div id="term">
+            <div id="term-con">conscious</div>
+            <div id="term-acc">access</div>
+          </div>
+          <div id="magnifier"></div>
+
+          <div id="hype-chips">
+            <div class="hype-chip">灵魂</div>
+            <div class="hype-chip">主观体验</div>
+            <div class="hype-chip">内心独白</div>
+          </div>
+
+          <div class="anchor-card" id="anchor-con">
+            <div class="ac-k">CONSCIOUS</div>
+            <div class="ac-t">conscious = <span class="cyan">数学表征</span></div>
+            <svg id="proj-svg" width="480" height="176" viewBox="0 0 480 176">
+              <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+                  <polygon points="0 0, 10 4, 0 8" fill="#f5f5f7"></polygon>
+                </marker>
+              </defs>
+              <line x1="30" y1="146" x2="452" y2="146" stroke="#475569" stroke-width="2" />
+              <line id="pv-vector" x1="60" y1="146" x2="300" y2="36" stroke="#f5f5f7" stroke-width="3" />
+              <line id="pv-dash" x1="300" y1="36" x2="300" y2="146" stroke="#94a3b8" stroke-width="2" />
+              <line id="pv-seg" x1="60" y1="146" x2="300" y2="146" stroke="#06b6d4" stroke-width="6" />
+              <text id="pv-label-vec" x="150" y="76" fill="#94a3b8" font-size="15" opacity="0">向量</text>
+              <text id="pv-label-proj" x="150" y="170" fill="#06b6d4" font-size="16" opacity="0">投影 = 数学表征</text>
+            </svg>
+          </div>
+
+          <div class="anchor-card" id="anchor-acc">
+            <div class="ac-k">ACCESS</div>
+            <div class="ac-t">access = <span class="cyan">可调用 / 可报告</span></div>
+            <div id="acc-flow">
+              <div id="acc-block"></div>
+              <div id="acc-arrow">→</div>
+              <div id="acc-box">后续计算</div>
+              <div id="acc-read">✓ 读取到这个投影</div>
+            </div>
+          </div>
+
+          <svg id="links-svg"></svg>
+
+          <div id="recombined-wrap">
+            <div id="recombined">可调用的向量投影</div>
+          </div>
+
+          <div id="history-card">
+            <div class="hc-t">GPT-2 · 第 21 层 · #2932 号神经元 = <span class="cyan">「加拿大」概念</span></div>
+            <div class="hc-s">三年前就找到过——不是 Claude 专属，更不是“觉醒”。</div>
+            <div id="history-tag">GPT-2 也有 → 所有大模型都有</div>
+          </div>
+        </div>
+
+        <div class="summary-overlay" id="summary">
+          <div class="sum-k">CONSCIOUS ACCESS</div>
+          <div class="sum-t">conscious access = 可调用的数学表征</div>
+          <div class="sum-pills">
+            <div class="sum-pill">数学表征 = 向量投影</div>
+            <div class="sum-pill">可调用 = 后续计算读得到</div>
+          </div>
+          <div class="sum-n">别再往感觉、体验、灵魂上想了</div>
+        </div>
+
+        <div class="ih-caption" id="caption"></div>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const scope = document.getElementById('root');
+
+      const AUDIO_DURATION = 70.812;
+      const CUES = {
+        intro:      { start:  0.000, end:  7.740 },
+        paper:      { start:  7.920, end: 12.024 },
+        term:       { start: 12.204, end: 18.324 },
+        wrong:      { start: 18.504, end: 24.516 },
+        decon1:     { start: 24.696, end: 35.064 },
+        decon2:     { start: 35.244, end: 41.256 },
+        recombine:  { start: 41.436, end: 50.832 },
+        history:    { start: 51.012, end: 63.144 },
+        conclusion: { start: 63.324, end: 70.524 }
+      };
+
+      const stage = scope.querySelector('#stage');
+      const capEl = scope.querySelector('#caption');
+      function setCaption(text) {
+        return function () {
+          capEl.textContent = text;
+          gsap.fromTo(capEl, { opacity: 0 }, { opacity: 1, duration: 0.45, ease: 'power1.out' });
+        };
+      }
+
+      const mediaCards = scope.querySelector('#media-cards');
+      const mcard1 = scope.querySelector('#mcard-1');
+      const mcard2 = scope.querySelector('#mcard-2');
+      const stamp = scope.querySelector('#stamp');
+      const paperTitle = scope.querySelector('#paper-title');
+      const termCon = scope.querySelector('#term-con');
+      const termAcc = scope.querySelector('#term-acc');
+      const magnifier = scope.querySelector('#magnifier');
+      const hypeChips = Array.prototype.slice.call(scope.querySelectorAll('.hype-chip'));
+      const anchorCon = scope.querySelector('#anchor-con');
+      const anchorAcc = scope.querySelector('#anchor-acc');
+      const linksSvg = scope.querySelector('#links-svg');
+      const recombined = scope.querySelector('#recombined');
+      const historyCard = scope.querySelector('#history-card');
+      const historyTag = scope.querySelector('#history-tag');
+      const summary = scope.querySelector('#summary');
+      const sumPills = Array.prototype.slice.call(scope.querySelectorAll('.sum-pill'));
+      const accBlock = scope.querySelector('#acc-block');
+      const accBox = scope.querySelector('#acc-box');
+      const accRead = scope.querySelector('#acc-read');
+
+      /* ---- 元素相对 stage 的 rect（在任何 fromTo 应用之前测量） ---- */
+      function rectOf(el) {
+        const sr = stage.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        return { x: r.left - sr.left, y: r.top - sr.top, w: r.width, h: r.height };
+      }
+      const termConRect = rectOf(termCon);
+      const termAccRect = rectOf(termAcc);
+      const anchorConRect = rectOf(anchorCon);
+      const anchorAccRect = rectOf(anchorAcc);
+
+      /* ---- 连线（动态路径 + strokeDashoffset 画线 trick） ---- */
+      const SVGNS = 'http://www.w3.org/2000/svg';
+      linksSvg.setAttribute('width', stage.clientWidth);
+      linksSvg.setAttribute('height', stage.clientHeight);
+      function makeLink(id, fromR, toR, color) {
+        const x1 = fromR.x + fromR.w / 2, y1 = fromR.y + fromR.h + 8;
+        const x2 = toR.x + toR.w / 2, y2 = toR.y - 8;
+        const p = document.createElementNS(SVGNS, 'path');
+        p.setAttribute('id', id);
+        p.setAttribute('d', 'M ' + x1 + ' ' + y1 + ' C ' + x1 + ' ' + (y1 + 90) + ', ' + x2 + ' ' + (y2 - 70) + ', ' + x2 + ' ' + y2);
+        p.setAttribute('fill', 'none');
+        p.setAttribute('stroke', color);
+        p.setAttribute('stroke-width', '3');
+        p.setAttribute('stroke-linecap', 'round');
+        linksSvg.appendChild(p);
+        const len = p.getTotalLength();
+        gsap.set(p, { strokeDasharray: len, strokeDashoffset: len });
+        return p;
+      }
+      const linkCon = makeLink('link-con', termConRect, anchorConRect, '#06b6d4');
+      const linkAcc = makeLink('link-acc', termAccRect, anchorAccRect, '#06b6d4');
+
+      /* ---- proj-svg 各线段 prep ---- */
+      function prepDraw(el) {
+        const len = el.getTotalLength();
+        gsap.set(el, { strokeDasharray: len, strokeDashoffset: len });
+        return len;
+      }
+      const pvVector = scope.querySelector('#pv-vector');
+      const pvDash = scope.querySelector('#pv-dash');
+      const pvSeg = scope.querySelector('#pv-seg');
+      const pvLabelVec = scope.querySelector('#pv-label-vec');
+      const pvLabelProj = scope.querySelector('#pv-label-proj');
+      prepDraw(pvVector);
+      prepDraw(pvDash);
+      prepDraw(pvSeg);
+
+      /* ---- 初始状态 ---- */
+      gsap.set(mcard1, { rotation: -4 });
+      gsap.set(mcard2, { rotation: 3 });
+      gsap.set(stamp, { rotation: -14 });
+      gsap.set(paperTitle, { y: -380, opacity: 0 });
+
+      /* ================= beats ================= */
+
+      /* intro：媒体卡片甩入 + 抖动 + “疯传”印章 */
+      tl.add(setCaption('最近，一条新闻被疯传：Claude 长出了意识，AI 有了内心独白和主观体验。'), CUES.intro.start);
+      tl.fromTo([mcard1, mcard2],
+        { x: -640, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.7, stagger: 0.18, ease: 'power3.out' },
+        CUES.intro.start + 0.3);
+      tl.to(mediaCards, { keyframes: [{ x: 7 }, { x: -5 }, { x: 4 }, { x: -2 }, { x: 0 }], duration: 0.4, ease: 'none' },
+        CUES.intro.start + 1.2);
+      tl.fromTo(stamp, { scale: 2.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: 'power4.in' },
+        CUES.intro.start + 2.1);
+      tl.to(mediaCards, { keyframes: [{ x: 4 }, { x: -3 }, { x: 0 }], duration: 0.3, ease: 'none' },
+        CUES.intro.start + 2.42);
+
+      /* paper：论文卡片落下，遮住媒体卡片一半 */
+      tl.add(setCaption('但 Anthropic 这篇论文的标题，直接翻译其实是《语言模型中的全局工作空间》。'), CUES.paper.start);
+      tl.to(paperTitle, { y: 0, opacity: 1, duration: 0.75, ease: 'bounce.out' }, CUES.paper.start + 0.35);
+
+      /* term：conscious access 拼入 + 放大镜扫过 */
+      tl.add(setCaption('论文里反复出现一个词，conscious access。媒体把它译成了“意识”。'), CUES.term.start);
+      tl.fromTo([termCon, termAcc],
+        { opacity: 0, y: 46, scale: 0.72 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.55, stagger: 0.28, ease: 'back.out(1.8)' },
+        CUES.term.start + 0.3);
+      tl.to(magnifier, { opacity: 1, duration: 0.3 }, CUES.term.start + 1.5);
+      tl.fromTo(magnifier, { x: 0 }, { x: 760, duration: 1.7, ease: 'power1.inOut' }, CUES.term.start + 1.8);
+      tl.to(magnifier, { opacity: 0, duration: 0.3 }, CUES.term.start + 3.6);
+
+      /* wrong：三个 hype chips 弹出 */
+      tl.add(setCaption('于是“灵魂”“内心独白”“主观体验”，这些抓眼球的说法全来了。'), CUES.wrong.start);
+      tl.fromTo(hypeChips,
+        { scale: 0, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.35, stagger: 0.15, ease: 'back.out(2.2)' },
+        CUES.wrong.start + 0.3);
+
+      /* decon1：conscious 脱离，连线 anchor-con，画出向量投影 */
+      tl.add(setCaption('拆开看。conscious 在这里不是人的意识，而是“数学表征”——你可以理解成，一个向量在某个方向上的投影。'), CUES.decon1.start);
+      tl.to(anchorCon, { opacity: 1, duration: 0.5 }, CUES.decon1.start + 0.2);
+      tl.to(termCon, { x: -420, y: 155, scale: 0.5, color: '#06b6d4', duration: 0.8, ease: 'power2.inOut' },
+        CUES.decon1.start + 0.4);
+      tl.to(linkCon, { strokeDashoffset: 0, duration: 0.7, ease: 'power1.inOut' }, CUES.decon1.start + 1.1);
+      tl.to(pvVector, { strokeDashoffset: 0, duration: 0.7, ease: 'power1.inOut' }, CUES.decon1.start + 3.2);
+      tl.set(pvVector, { attr: { 'marker-end': 'url(#arrowhead)' } }, CUES.decon1.start + 3.92);
+      tl.to(pvLabelVec, { opacity: 1, duration: 0.3 }, CUES.decon1.start + 4.0);
+      tl.to(pvDash, { strokeDashoffset: 0, duration: 0.5, ease: 'power1.in' }, CUES.decon1.start + 4.2);
+      tl.set(pvDash, { strokeDasharray: '6 6', strokeDashoffset: 0 }, CUES.decon1.start + 4.72);
+      tl.to(pvSeg, { strokeDashoffset: 0, duration: 0.5, ease: 'power1.out' }, CUES.decon1.start + 4.9);
+      tl.to(pvLabelProj, { opacity: 1, duration: 0.3 }, CUES.decon1.start + 5.4);
+
+      /* decon2：access 脱离，连线 anchor-acc，投影块流入“后续计算” */
+      tl.add(setCaption('access 则是“可调用、可报告”——这个投影，能被后续的计算读取到。'), CUES.decon2.start);
+      tl.to(anchorAcc, { opacity: 1, duration: 0.5 }, CUES.decon2.start + 0.2);
+      tl.to(termAcc, { x: 350, y: 155, scale: 0.5, color: '#06b6d4', duration: 0.8, ease: 'power2.inOut' },
+        CUES.decon2.start + 0.4);
+      tl.to(linkAcc, { strokeDashoffset: 0, duration: 0.7, ease: 'power1.inOut' }, CUES.decon2.start + 1.1);
+      tl.to(accBlock, { x: 250, duration: 0.9, ease: 'power2.inOut' }, CUES.decon2.start + 2.6);
+      tl.to(accBlock, { opacity: 0, duration: 0.25 }, CUES.decon2.start + 3.5);
+      tl.to(accBox, { borderColor: '#06b6d4', duration: 0.3 }, CUES.decon2.start + 3.5);
+      tl.to(accBox, { scale: 1.06, duration: 0.25, yoyo: true, repeat: 1 }, CUES.decon2.start + 3.6);
+      tl.to(accRead, { opacity: 1, duration: 0.4 }, CUES.decon2.start + 3.9);
+
+      /* recombine：hype chips 坠落消失，锚点卡靠拢，pill 拼出 */
+      tl.add(setCaption('合起来，这个词真正的意思是：可调用的向量投影。和感觉、体验、灵魂，都没有关系。'), CUES.recombine.start);
+      tl.to(hypeChips, { keyframes: [{ x: 5 }, { x: -5 }, { x: 4 }, { x: 0 }], duration: 0.35, stagger: 0.05, ease: 'none' },
+        CUES.recombine.start + 0.2);
+      tl.to(hypeChips, { y: 460, rotation: 45, opacity: 0, duration: 0.8, stagger: 0.15, ease: 'power2.in' },
+        CUES.recombine.start + 0.7);
+      tl.to([termCon, termAcc], { opacity: 0, duration: 0.4 }, CUES.recombine.start + 0.4);
+      tl.to([linkCon, linkAcc], { opacity: 0, duration: 0.4 }, CUES.recombine.start + 0.4);
+      tl.to(anchorCon, { x: 150, scale: 0.85, duration: 0.7, ease: 'power2.inOut' }, CUES.recombine.start + 2.2);
+      tl.to(anchorAcc, { x: -150, scale: 0.85, duration: 0.7, ease: 'power2.inOut' }, CUES.recombine.start + 2.2);
+      tl.fromTo(recombined, { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: 'back.out(1.8)' },
+        CUES.recombine.start + 3.0);
+      tl.to(recombined, { scale: 1.08, duration: 0.28, yoyo: true, repeat: 1 }, CUES.recombine.start + 3.7);
+
+      /* history：GPT-2 历史卡滑入 */
+      tl.add(setCaption('这也不新鲜。三年前，科学家就在 GPT-2 里找到过专门代表“加拿大”的神经元。从 GPT-2 起，所有大模型都有可调用的表征。'), CUES.history.start);
+      tl.fromTo(historyCard, { x: -640, opacity: 0 }, { x: 0, opacity: 1, duration: 0.7, ease: 'power3.out' },
+        CUES.history.start + 0.3);
+      tl.fromTo(historyTag, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5 }, CUES.history.start + 1.2);
+
+      /* conclusion：summary overlay */
+      tl.add(setCaption('记住这个翻译。后面新闻里说的“意识空间”，其实指的就是：可调用的数学表征。'), CUES.conclusion.start);
+      tl.to(summary, { opacity: 1, duration: 0.8 }, CUES.conclusion.start + 0.3);
+      tl.fromTo(sumPills, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.2 },
+        CUES.conclusion.start + 0.9);
+
+      /* 尾端 anchor（BLOCKING） */
+      tl.to('#frame', { opacity: 1, duration: 0.05, ease: 'none' }, AUDIO_DURATION - 0.05);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

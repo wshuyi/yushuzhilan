@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <!-- GSAP 和 Runtime 必须同步加载（pitfalls §1, §2） -->
+    <script src="../lib/gsap.min.js"></script>
+    <script src="../lib/hyperframe.runtime.iife.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1920px; height: 1080px; overflow: hidden;
+        background: #0a0a0a;
+        font-family: "Noto Sans SC", sans-serif;
+        color: #f5f5f7;
+      }
+      .bg-glow {
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(ellipse 900px 700px at 25% 40%, rgba(124,58,237,0.22), rgba(124,58,237,0) 60%),
+          radial-gradient(ellipse 800px 600px at 80% 70%, rgba(6,182,212,0.18), rgba(6,182,212,0) 60%);
+        pointer-events: none;
+      }
+      .frame { position: absolute; inset: 0; padding: 70px 100px; }
+      .ih-eyebrow {
+        font-size: 26px; letter-spacing: 0.35em; color: #06b6d4;
+        text-transform: uppercase; margin-bottom: 14px; opacity: 0;
+      }
+      .ih-title {
+        font-size: 64px; font-weight: 700; line-height: 1.1;
+        color: #f5f5f7; letter-spacing: -0.02em; opacity: 0;
+      }
+      .ih-sub { font-size: 26px; color: #94a3b8; margin-top: 14px; opacity: 0; }
+
+      #stage { position: absolute; left: 100px; right: 100px; top: 270px; bottom: 160px; }
+      #routes { position: absolute; left: 0; top: 0; width: 1720px; height: 650px; overflow: visible; }
+      #routes path { fill: none; stroke: #06b6d4; stroke-width: 5; stroke-linecap: round; }
+
+      #stream {
+        position: absolute; left: 365px; top: 10px; width: 90px; height: 150px;
+        background: linear-gradient(180deg, rgba(6,182,212,0.06), rgba(6,182,212,0.22), rgba(6,182,212,0.06));
+        border: 1px solid rgba(6,182,212,0.55); border-radius: 18px;
+      }
+      #gate {
+        position: absolute; left: 250px; top: 160px; width: 320px; height: 300px;
+        border: 2px solid #7c3aed; border-radius: 18px; background: rgba(124,58,237,0.08);
+        opacity: 0;
+      }
+      #gate-title {
+        position: absolute; left: 0; right: 0; top: 26px; text-align: center;
+        font-size: 34px; font-weight: 700; color: #c4b5fd;
+      }
+      #gate-q {
+        position: absolute; left: 0; right: 0; bottom: 30px; text-align: center;
+        font-size: 28px; color: #94a3b8; opacity: 0;
+      }
+      #scan-beam {
+        position: absolute; left: 280px; top: 210px; width: 4px; height: 200px;
+        background: #06b6d4; box-shadow: 0 0 18px rgba(6,182,212,0.9);
+        border-radius: 2px; opacity: 0;
+      }
+      #badge-nomove {
+        position: absolute; left: 325px; top: 143px;
+        background: #1f2937; border: 1px solid #6b7280; color: #9ca3af;
+        font-size: 24px; padding: 6px 16px; border-radius: 999px; opacity: 0;
+      }
+      .mod-card {
+        position: absolute; width: 320px; height: 220px;
+        border: 2px solid #334155; background: #151a23; border-radius: 16px; opacity: 0;
+      }
+      .mod-name {
+        position: absolute; left: 0; right: 0; top: 26px; text-align: center;
+        font-size: 32px; font-weight: 600; color: #94a3b8;
+      }
+      #mod-0 { left: 980px; top: 80px; }
+      #mod-1 { left: 1340px; top: 80px; }
+      #mod-2 { left: 980px; top: 340px; }
+      #mod-3 { left: 1340px; top: 340px; }
+      .chip {
+        position: absolute; top: 90px; font-size: 24px; color: #cbd5e1;
+        background: #0f172a; border: 1px solid #475569; padding: 8px 14px;
+        border-radius: 999px; opacity: 0; z-index: 5;
+      }
+      #chip-spider { left: 22px; color: #f59e0b; border-color: #f59e0b; }
+      #chip-jiezhi { left: 110px; }
+      #chip-eight  { left: 198px; }
+      #hit-star {
+        position: absolute; left: 1262px; top: 44px; font-size: 56px; color: #22c55e;
+        text-shadow: 0 0 24px rgba(34,197,94,0.9); opacity: 0;
+      }
+      #route-pkt {
+        position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 50%;
+        background: radial-gradient(circle, #a5f3fc 0%, #06b6d4 60%);
+        box-shadow: 0 0 26px rgba(6,182,212,0.95); opacity: 0;
+      }
+      #porter-mini {
+        position: absolute; left: 1108px; top: 232px;
+        background: #f59e0b; color: #111827; font-size: 20px; font-weight: 700;
+        padding: 4px 12px; border-radius: 999px; opacity: 0; z-index: 6;
+      }
+      #duo-label {
+        position: absolute; left: 0; right: 0; top: 584px; text-align: center;
+        font-size: 32px; color: #cbd5e1; opacity: 0;
+      }
+      #duo-label .a { color: #06b6d4; font-weight: 700; }
+      #duo-label .m { color: #7c3aed; font-weight: 700; }
+
+      .ih-caption {
+        position: absolute; left: 100px; right: 100px; bottom: 60px;
+        font-size: 34px; color: #cbd5e1; text-align: center; opacity: 0; z-index: 20;
+      }
+      .summary-overlay {
+        position: absolute; inset: 0; background: rgba(10,10,10,0.55);
+        backdrop-filter: blur(4px);
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        text-align: center; opacity: 0; z-index: 10;
+      }
+      .sum-title { font-size: 56px; font-weight: 700; color: #f5f5f7; }
+      .sum-note { font-size: 30px; color: #94a3b8; margin-top: 18px; }
+      .sum-pills { display: flex; gap: 28px; margin-top: 48px; }
+      .pill {
+        border: 1px solid #334155; background: rgba(15,23,42,0.85); border-radius: 16px;
+        padding: 20px 28px; font-size: 26px; color: #cbd5e1; opacity: 0;
+      }
+      .pill b { color: #06b6d4; margin-right: 12px; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="53.352"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div class="frame" id="frame">
+        <div class="bg-glow"></div>
+        <div class="ih-eyebrow">MLP · 多层感知</div>
+        <div class="ih-title">多层感知：认出“这是哪类问题”</div>
+        <div class="ih-sub">MLP 不搬信息。它是模式识别器：认出当前内容命中了哪个已学会的知识模块，然后把信息流引过去。</div>
+
+        <div id="stage">
+          <svg id="routes" viewBox="0 0 1720 650">
+            <path id="route-path" d="M 570 310 C 740 310, 820 190, 975 190" />
+          </svg>
+
+          <div id="stream"></div>
+          <div id="gate">
+            <div id="gate-title">MLP 识别器</div>
+            <div id="gate-q">这是哪类问题？</div>
+          </div>
+          <div id="scan-beam"></div>
+          <div id="badge-nomove">不搬运信息</div>
+
+          <div class="mod-card" id="mod-0">
+            <div class="mod-name">动物常识</div>
+            <div class="chip" id="chip-spider">蜘蛛</div>
+            <div class="chip" id="chip-jiezhi">节肢</div>
+            <div class="chip" id="chip-eight">八条腿</div>
+          </div>
+          <div class="mod-card" id="mod-1"><div class="mod-name">语言学知识</div></div>
+          <div class="mod-card" id="mod-2"><div class="mod-name">数学计算</div></div>
+          <div class="mod-card" id="mod-3"><div class="mod-name">多选判断</div></div>
+
+          <div id="hit-star">✦</div>
+          <div id="route-pkt"></div>
+          <div id="porter-mini">搬运工</div>
+          <div id="duo-label"><span class="a">Attention 搬运</span> + <span class="m">MLP 识别</span> = 答案流出</div>
+        </div>
+
+        <div class="ih-caption"></div>
+
+        <div class="summary-overlay" id="summary">
+          <div class="sum-title">一个搬运，一个识别</div>
+          <div class="sum-note">两个动作叠加，答案一点一点流出来</div>
+          <div class="sum-pills">
+            <div class="pill"><b>识别</b>判断内容触发了哪种已学会的模式</div>
+            <div class="pill"><b>模块</b>动物常识、语言学知识、数学计算、多选判断……</div>
+            <div class="pill"><b>引流</b>信息流转向对应领域，相关词被激活</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const scope = document.getElementById('root');
+
+      const AUDIO_DURATION = 53.352;
+      const CUES = {
+        intro:      { start: 0.0,    end: 4.104 },
+        nomove:     { start: 4.284,  end: 9.288 },
+        scan:       { start: 9.468,  end: 16.308 },
+        modules:    { start: 16.488, end: 24.516 },
+        hit:        { start: 24.696, end: 28.692 },
+        route:      { start: 28.872, end: 38.196 },
+        team:       { start: 38.376, end: 45.9 },
+        conclusion: { start: 46.08,  end: 53.1 }
+      };
+
+      const CAPS = {
+        intro:      "第二个动作，叫多层感知，MLP。",
+        nomove:     "它不搬运其他位置的信息。它更像一个模式识别器。",
+        scan:       "它读取当前的信息流，然后判断：这些内容，触发了我学会过的哪种模式？",
+        modules:    "模型内部，存着大量模块化的知识：动物常识、语言学知识、数学计算、多选判断……",
+        hit:        "眼前这个问题，命中了“动物常识”模块。",
+        route:      "信息流被引向这个知识领域。领域里相关的词——蜘蛛、节肢、八条腿——被激活了。",
+        team:       "接下来，注意力机制在这个领域里继续挑词，把最合适的，加回信息流。",
+        conclusion: "一个搬运，一个识别。两个动作叠加在一起，答案就一点一点流出来了。"
+      };
+
+      const q = function (s) { return scope.querySelector(s); };
+      const qa = function (s) { return scope.querySelectorAll(s); };
+
+      const eyebrow = q('.ih-eyebrow'), title = q('.ih-title'), sub = q('.ih-sub');
+      const capEl = q('.ih-caption');
+      const stream = q('#stream'), gate = q('#gate'), gateQ = q('#gate-q');
+      const scanBeam = q('#scan-beam'), badgeNomove = q('#badge-nomove');
+      const mod0 = q('#mod-0'), mod1 = q('#mod-1'), mod2 = q('#mod-2'), mod3 = q('#mod-3');
+      const mod0Name = q('#mod-0 .mod-name');
+      const chipSpider = q('#chip-spider'), chipJiezhi = q('#chip-jiezhi'), chipEight = q('#chip-eight');
+      const hitStar = q('#hit-star');
+      const routePath = q('#route-path'), routePkt = q('#route-pkt');
+      const porterMini = q('#porter-mini'), duoLabel = q('#duo-label');
+      const summary = q('#summary'), pills = qa('.pill');
+
+      function setCaption(id) { capEl.textContent = CAPS[id]; }
+
+      // 引流路径初始不可见：strokeDashoffset trick（仅用 GSAP core）
+      const routeLen = routePath.getTotalLength();
+      routePath.style.strokeDasharray = routeLen;
+      routePath.style.strokeDashoffset = routeLen;
+
+      // 信息包飞行轨迹（与 route-path 同一组贝塞尔控制点）
+      const RT = { p0: { x: 570, y: 310 }, p1: { x: 740, y: 310 }, p2: { x: 820, y: 190 }, p3: { x: 975, y: 190 } };
+      function bez(B, t) {
+        const u = 1 - t;
+        return {
+          x: u*u*u*B.p0.x + 3*u*u*t*B.p1.x + 3*u*t*t*B.p2.x + t*t*t*B.p3.x,
+          y: u*u*u*B.p0.y + 3*u*u*t*B.p1.y + 3*u*t*t*B.p2.y + t*t*t*B.p3.y
+        };
+      }
+
+      gsap.set(stream, { scaleY: 0, transformOrigin: '50% 0%' });
+      gsap.set(hitStar, { rotation: 0, transformOrigin: '50% 50%' });
+      gsap.set(routePkt, { xPercent: -50, yPercent: -50, x: RT.p0.x, y: RT.p0.y });
+
+      // 字幕条：每个 cue 开始切换为与该 cue 逐字相同的文本并淡入
+      ['intro','nomove','scan','modules','hit','route','team','conclusion'].forEach(function (id) {
+        const t = CUES[id].start;
+        tl.to(capEl, { opacity: 0, duration: 0.22 }, Math.max(0, t - 0.26));
+        tl.add(function () { setCaption(id); }, t);
+        tl.to(capEl, { opacity: 1, duration: 0.35 }, t + 0.04);
+      });
+
+      // intro：标题区淡入
+      tl.fromTo(eyebrow, { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, CUES.intro.start + 0.2);
+      tl.fromTo(title,   { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }, CUES.intro.start + 0.5);
+      tl.fromTo(sub,     { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }, CUES.intro.start + 0.9);
+
+      // nomove：gate 出现 + 徽章别上 + 信息流带从上方流入 gate 顶部
+      tl.fromTo(gate, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, CUES.nomove.start + 0.2);
+      tl.fromTo(badgeNomove, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2)' }, CUES.nomove.start + 1.4);
+      tl.fromTo(stream, { scaleY: 0 }, { scaleY: 1, duration: 1.2, ease: 'power2.out' }, CUES.nomove.start + 0.6);
+
+      // scan：扫描光束左右扫动 2 次 + 文字闪现
+      tl.to(scanBeam, { opacity: 1, duration: 0.3 }, CUES.scan.start + 0.2);
+      tl.to(scanBeam, { x: 256, duration: 1.4, ease: 'sine.inOut', yoyo: true, repeat: 3 }, CUES.scan.start + 0.5);
+      tl.to(scanBeam, { opacity: 0, duration: 0.4 }, CUES.scan.start + 6.3);
+      tl.fromTo(gateQ, { opacity: 0 }, { opacity: 1, duration: 0.5 }, CUES.scan.start + 0.8);
+
+      // modules：4 张模块卡 stagger 淡入（灰态）
+      tl.fromTo(qa('.mod-card'), { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.4, ease: 'power2.out' }, CUES.modules.start + 0.3);
+
+      // hit：mod-0 green 高亮放大，其余变暗，星芒一闪
+      tl.to(mod0, { borderColor: '#22c55e', boxShadow: '0 0 44px rgba(34,197,94,0.45)', scale: 1.04, duration: 0.6, ease: 'back.out(1.6)' }, CUES.hit.start + 0.1);
+      tl.to(mod0Name, { color: '#22c55e', duration: 0.4 }, CUES.hit.start + 0.3);
+      tl.to([mod1, mod2, mod3], { opacity: 0.3, duration: 0.5 }, CUES.hit.start + 0.2);
+      tl.fromTo(hitStar, { opacity: 0, scale: 0.2, rotation: 0 }, { opacity: 1, scale: 1.3, rotation: 90, duration: 0.45, ease: 'back.out(2)' }, CUES.hit.start + 0.35);
+      tl.to(hitStar, { opacity: 0, scale: 1.8, duration: 0.5 }, CUES.hit.start + 0.9);
+
+      // route：路径画出 + 信息包流入 + 三个词 chip stagger 弹出
+      const progRt = { t: 0 };
+      tl.to(routePath, { strokeDashoffset: 0, duration: 1.4, ease: 'power2.inOut' }, CUES.route.start + 0.2);
+      tl.to(routePkt, { opacity: 1, duration: 0.2 }, CUES.route.start + 0.9);
+      tl.to(progRt, { t: 1, duration: 2.6, ease: 'power1.inOut', onUpdate: function () {
+        const pt = bez(RT, progRt.t); gsap.set(routePkt, { x: pt.x, y: pt.y });
+      } }, CUES.route.start + 0.9);
+      tl.to(routePkt, { opacity: 0, scale: 0.4, duration: 0.4 }, CUES.route.start + 3.6);
+      tl.fromTo([chipSpider, chipJiezhi, chipEight], { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.5, stagger: 0.45, ease: 'back.out(2.2)' }, CUES.route.start + 2.2);
+
+      // team：小搬运工把「蜘蛛」chip 推回流带 + 组合标签淡入
+      tl.fromTo(porterMini, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(2)' }, CUES.team.start + 0.2);
+      tl.to(chipSpider, { x: -628, y: -107, duration: 2.4, ease: 'power1.inOut' }, CUES.team.start + 0.7);
+      tl.to(porterMini, { x: -628, y: -107, duration: 2.4, ease: 'power1.inOut' }, CUES.team.start + 0.75);
+      tl.to(porterMini, { opacity: 0, duration: 0.4 }, CUES.team.start + 3.3);
+      tl.fromTo(duoLabel, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, CUES.team.start + 3.8);
+
+      // conclusion：summary overlay 揭示 + pills stagger
+      tl.to(summary, { opacity: 1, duration: 0.6, ease: 'power1.out' }, CUES.conclusion.start);
+      tl.fromTo(pills, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.25, ease: 'power2.out' }, CUES.conclusion.start + 0.5);
+
+      // 尾端 anchor（BLOCKING）
+      tl.to('#frame', { opacity: 1, duration: 0.05, ease: 'none' }, AUDIO_DURATION - 0.05);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
